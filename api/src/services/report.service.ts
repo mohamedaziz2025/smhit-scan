@@ -106,7 +106,9 @@ export async function recomputeReport(report: IReport): Promise<IReport> {
 
   const agentIds = [...new Set(fiches.map((f) => f.createdByAgentId.toString()))];
   const agents = await User.find({ _id: { $in: agentIds } }).select("fullName").lean();
-  const agentNameById = new Map(agents.map((a) => [a.id, a.fullName]));
+  // .lean() renvoie des objets bruts sans les virtuals Mongoose (dont `.id`) —
+  // il faut donc composer la clé à partir de `._id` directement.
+  const agentNameById = new Map(agents.map((a) => [a._id.toString(), a.fullName]));
 
   const planning = fiches.map((f) => ({
     date: f.interventionDate,
