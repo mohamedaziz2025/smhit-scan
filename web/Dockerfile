@@ -1,6 +1,10 @@
 # --- Étape build ---
 FROM node:20-alpine AS build
 WORKDIR /app
+# NEXT_PUBLIC_* est inliné dans le bundle client au build — doit être un ARG,
+# pas seulement une env de runtime (sinon le code client ne le voit jamais).
+ARG NEXT_PUBLIC_API_URL=http://localhost:4000
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 COPY package*.json ./
 RUN npm install
 COPY . .
