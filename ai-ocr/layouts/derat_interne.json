@@ -1,0 +1,26 @@
+{
+  "fiche_type": "DERATISATION_INTERNE",
+  "layout_version": "v01",
+  "description": "Template de layout pour la fiche dératisation zones internes (plaques à colle) — §7.2.",
+  "header_fields": [
+    { "key": "client_name", "label": "Client" },
+    { "key": "site_name", "label": "Site" },
+    { "key": "date", "label": "Date" }
+  ],
+  "row_unit": "poste",
+  "columns": [
+    { "key": "posteNo", "label": "N° Poste", "type": "number" },
+    { "key": "etatPlaque.intact", "label": "Intact", "type": "checkbox" },
+    { "key": "etatPlaque.plaqueAlteree", "label": "Plaque altérée", "type": "checkbox" },
+    { "key": "etatPlaque.presenceCadavres", "label": "Présence cadavres", "type": "checkbox" },
+    { "key": "etatPlaque.disparu", "label": "Disparu", "type": "checkbox" },
+    { "key": "action.remplace", "label": "Remplacé", "type": "checkbox" },
+    { "key": "produit.refCode_raw", "label": "Réf. produit", "type": "text" },
+    { "key": "produit.numLot", "label": "N° Lot", "type": "text" },
+    { "key": "etatPorteAppat.inaccessible", "label": "Inaccessible", "type": "checkbox" },
+    { "key": "etatPorteAppat.disparu", "label": "Disparu", "type": "checkbox" },
+    { "key": "etatPorteAppat.malFixe", "label": "Mal fixé", "type": "checkbox" },
+    { "key": "etatPorteAppat.casse", "label": "Cassé", "type": "checkbox" }
+  ],
+  "checkbox_pixel_density_threshold": 0.35
+}

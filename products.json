@@ -1,0 +1,322 @@
+[
+  {
+    "code": "EQU072",
+    "name": "PLAQUE A GLUE 20",
+    "category": "glue_board"
+  },
+  {
+    "code": "EQU145",
+    "name": "PLAQUE PVC TRIANGULAIRE 15/15CM",
+    "category": "glue_board"
+  },
+  {
+    "code": "EQU147",
+    "name": "PLAQUE TRIANGLE \"SOURIS\" 10*10 EN PVC 3MM",
+    "category": "glue_board"
+  },
+  {
+    "code": "EQU156",
+    "name": "PLAQUE A GLUE LD-41-5",
+    "category": "glue_board"
+  },
+  {
+    "code": "EQU157",
+    "name": "PLAQUE A GLUE40 LD-41-5",
+    "category": "glue_board"
+  },
+  {
+    "code": "EQU158",
+    "name": "PLAQUE A GLUE20 LD-41-5",
+    "category": "glue_board"
+  },
+  {
+    "code": "NET005",
+    "name": "EKOCID",
+    "category": "disinfectant"
+  },
+  {
+    "code": "NET007",
+    "name": "SOUDE",
+    "category": "disinfectant"
+  },
+  {
+    "code": "PLDRT005",
+    "name": "GARDEN COL",
+    "category": "rodenticide"
+  },
+  {
+    "code": "PLDRT010",
+    "name": "GLUE MOUSE AND RAT",
+    "category": "rodenticide"
+  },
+  {
+    "code": "PLDRT011",
+    "name": "GLUE TRAPS VERT",
+    "category": "rodenticide"
+  },
+  {
+    "code": "PLDRT015",
+    "name": "RAKILL BLOC",
+    "category": "rodenticide"
+  },
+  {
+    "code": "PLDRT017",
+    "name": "RATICIDE 70P",
+    "category": "rodenticide"
+  },
+  {
+    "code": "PLDRT021",
+    "name": "RAMET BLOC",
+    "category": "rodenticide"
+  },
+  {
+    "code": "PLDRT022",
+    "name": "RAMET PATE",
+    "category": "rodenticide"
+  },
+  {
+    "code": "PLDRT024",
+    "name": "RATKILL PATE",
+    "category": "rodenticide"
+  },
+  {
+    "code": "PLDRT036",
+    "name": "PASTA DIFE",
+    "category": "rodenticide"
+  },
+  {
+    "code": "PLDRT041",
+    "name": "PLAQUE A COLLE",
+    "category": "rodenticide"
+  },
+  {
+    "code": "PLDRT042",
+    "name": "PLAQUE A COLLE/2",
+    "category": "rodenticide"
+  },
+  {
+    "code": "PLDRT043",
+    "name": "PLAQUE A COLLE/3",
+    "category": "rodenticide"
+  },
+  {
+    "code": "PLDRT045",
+    "name": "PLAQUE A COLLE 0.5",
+    "category": "rodenticide"
+  },
+  {
+    "code": "PLDRT046",
+    "name": "RAMET PELLETS",
+    "category": "rodenticide"
+  },
+  {
+    "code": "PLDRT049",
+    "name": "RAKILL PELLETS",
+    "category": "rodenticide"
+  },
+  {
+    "code": "PLDSF003",
+    "name": "DETREQUAT AL 20L",
+    "category": "disinfectant"
+  },
+  {
+    "code": "PLDSF006",
+    "name": "FORMOL",
+    "category": "disinfectant"
+  },
+  {
+    "code": "PLDSF007",
+    "name": "G5F",
+    "category": "disinfectant"
+  },
+  {
+    "code": "PLDSF026",
+    "name": "DETERQUAT CIP OXY5",
+    "category": "disinfectant"
+  },
+  {
+    "code": "PLDSH002",
+    "name": "KALACH 20",
+    "category": "herbicide"
+  },
+  {
+    "code": "PLDSI001",
+    "name": "ACTELIC",
+    "category": "insecticide"
+  },
+  {
+    "code": "PLDSI006",
+    "name": "ATOM EC 25 5L",
+    "category": "insecticide"
+  },
+  {
+    "code": "PLDSI007",
+    "name": "ATOM GEL",
+    "category": "insecticide"
+  },
+  {
+    "code": "PLDSI010",
+    "name": "CAFOUGEL",
+    "category": "insecticide"
+  },
+  {
+    "code": "PLDSI017",
+    "name": "DELTACAL",
+    "category": "insecticide"
+  },
+  {
+    "code": "PLDSI022",
+    "name": "ZZ PAFF VERT",
+    "category": "insecticide"
+  },
+  {
+    "code": "PLDSI027",
+    "name": "HILAC 1L",
+    "category": "insecticide"
+  },
+  {
+    "code": "PLDSI028",
+    "name": "HILAC 5L",
+    "category": "insecticide"
+  },
+  {
+    "code": "PLDSI029",
+    "name": "TOUAREG 5L",
+    "category": "insecticide"
+  },
+  {
+    "code": "PLDSI031",
+    "name": "ZZ PAF",
+    "category": "insecticide"
+  },
+  {
+    "code": "PLDSI032",
+    "name": "KAO-FOURMI",
+    "category": "insecticide"
+  },
+  {
+    "code": "PLDSI033",
+    "name": "KILLER GEL",
+    "category": "insecticide"
+  },
+  {
+    "code": "PLDSI039",
+    "name": "OUT INSECT",
+    "category": "insecticide"
+  },
+  {
+    "code": "PLDSI042",
+    "name": "PYRICAL 20L",
+    "category": "insecticide"
+  },
+  {
+    "code": "PLDSI051",
+    "name": "ACTISEVE",
+    "category": "insecticide"
+  },
+  {
+    "code": "PLDSI059",
+    "name": "BARRIERE INSECTES 20L",
+    "category": "insecticide"
+  },
+  {
+    "code": "PLDSI060",
+    "name": "BARRIERE INSECTES 5L",
+    "category": "insecticide"
+  },
+  {
+    "code": "PLDSI062",
+    "name": "AGITA",
+    "category": "insecticide"
+  },
+  {
+    "code": "PLDSI070",
+    "name": "BARRIERE INSECTES 1L",
+    "category": "insecticide"
+  },
+  {
+    "code": "PLDSI071",
+    "name": "ADVION COCKROACH GEL",
+    "category": "insecticide"
+  },
+  {
+    "code": "PLDSI072",
+    "name": "ADVION ANT GEL",
+    "category": "insecticide"
+  },
+  {
+    "code": "PLDSI075",
+    "name": "PRISMA",
+    "category": "insecticide"
+  },
+  {
+    "code": "PLDSI077",
+    "name": "ACIDE BORIQUE",
+    "category": "insecticide"
+  },
+  {
+    "code": "PLDSI078",
+    "name": "CYPERCAL",
+    "category": "insecticide"
+  },
+  {
+    "code": "PLDSI079",
+    "name": "ZZ PAF 750ML",
+    "category": "insecticide"
+  },
+  {
+    "code": "PLDSI082",
+    "name": "FUMISPORE HA 20 M3",
+    "category": "insecticide"
+  },
+  {
+    "code": "PLDSI083",
+    "name": "DECASOL",
+    "category": "insecticide"
+  },
+  {
+    "code": "PLDSI084",
+    "name": "OPTIMAGRO",
+    "category": "insecticide"
+  },
+  {
+    "code": "PLDSI085",
+    "name": "ACTELIC 1L",
+    "category": "insecticide"
+  },
+  {
+    "code": "PLFUM001",
+    "name": "DETIA GAZ",
+    "category": "fumigant"
+  },
+  {
+    "code": "PLFUM003",
+    "name": "QUICKPHOS 1.440 KG",
+    "category": "fumigant"
+  },
+  {
+    "code": "PLFUM004",
+    "name": "QUICKPHOS1KG",
+    "category": "fumigant"
+  },
+  {
+    "code": "PLFUM006",
+    "name": "FUMIGOL 60",
+    "category": "fumigant"
+  },
+  {
+    "code": "PLFUM007",
+    "name": "FUMIGOL 120",
+    "category": "fumigant"
+  },
+  {
+    "code": "PLFUM009",
+    "name": "PLAQUETTE DEGESH",
+    "category": "fumigant"
+  },
+  {
+    "code": "PLFUM011",
+    "name": "MAGNAPHOS 57% 117GRM (PLQ)",
+    "category": "fumigant"
+  }
+]

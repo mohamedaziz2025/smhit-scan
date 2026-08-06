@@ -1,0 +1,27 @@
+{
+  "fiche_type": "DERATISATION_EXTERNE",
+  "layout_version": "v01",
+  "description": "Template de layout pour la fiche dératisation zones externes — décrit les colonnes attendues du tableau papier pour le mapping cellule -> champ (§7.2).",
+  "header_fields": [
+    { "key": "client_name", "label": "Client" },
+    { "key": "site_name", "label": "Site" },
+    { "key": "date", "label": "Date" }
+  ],
+  "row_unit": "poste",
+  "columns": [
+    { "key": "posteNo", "label": "N° Poste", "type": "number" },
+    { "key": "etatAppat.intact", "label": "Intact", "type": "checkbox" },
+    { "key": "etatAppat.appatAltere", "label": "Appât altéré", "type": "checkbox" },
+    { "key": "etatAppat.presenceCadavres", "label": "Présence cadavres", "type": "checkbox" },
+    { "key": "etatAppat.consomme", "label": "Consommé", "type": "checkbox" },
+    { "key": "etatAppat.disparu", "label": "Disparu", "type": "checkbox" },
+    { "key": "action.remplace", "label": "Remplacé", "type": "checkbox" },
+    { "key": "produit.refCode_raw", "label": "Réf. produit", "type": "text" },
+    { "key": "produit.numLot", "label": "N° Lot", "type": "text" },
+    { "key": "etatPorteAppat.inaccessible", "label": "Inaccessible", "type": "checkbox" },
+    { "key": "etatPorteAppat.disparu", "label": "Disparu", "type": "checkbox" },
+    { "key": "etatPorteAppat.malFixe", "label": "Mal fixé", "type": "checkbox" },
+    { "key": "etatPorteAppat.casse", "label": "Cassé", "type": "checkbox" }
+  ],
+  "checkbox_pixel_density_threshold": 0.35
+}

@@ -1,0 +1,146 @@
+services:
+  # ---------------------------------------------------------
+  # Dashboard Admin / SuperAdmin — Next.js 14
+  # ---------------------------------------------------------
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: smhit-web
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:4000}
+    depends_on:
+      - api
+    networks: [smhit-net]
+
+  # ---------------------------------------------------------
+  # Backend — Express.js (REST API + Auth + RBAC + jobs)
+  # ---------------------------------------------------------
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: smhit-api
+    restart: unless-stopped
+    ports:
+      - "${API_PORT:-4000}:4000"
+    env_file:
+      - .env
+    environment:
+      - PORT=4000
+      - MONGO_URI=${MONGO_URI}
+      - REDIS_URL=${REDIS_URL}
+      - AI_OCR_URL=${AI_OCR_URL:-http://ai-ocr:8000}
+      - MINIO_ENDPOINT=${MINIO_ENDPOINT:-minio}
+      - MINIO_PORT=${MINIO_PORT:-9000}
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+      - MINIO_BUCKET=${MINIO_BUCKET:-smhit-files}
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ai-ocr:
+        condition: service_started
+    volumes:
+      - api-uploads:/app/uploads
+    networks: [smhit-net]
+
+  # ---------------------------------------------------------
+  # Microservice IA/OCR — FastAPI (autonome, auto-hébergé)
+  # ---------------------------------------------------------
+  ai-ocr:
+    build:
+      context: ./ai-ocr
+      dockerfile: Dockerfile
+    container_name: smhit-ai-ocr
+    restart: unless-stopped
+    ports:
+      - "${AI_OCR_PORT:-8000}:8000"
+    environment:
+      - CONFIDENCE_THRESHOLD=${AI_OCR_CONFIDENCE_THRESHOLD:-0.75}
+    networks: [smhit-net]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ---------------------------------------------------------
+  # Base de données
+  # ---------------------------------------------------------
+  mongo:
+    image: mongo:7
+    container_name: smhit-mongo
+    restart: unless-stopped
+    ports:
+      - "${MONGO_PORT:-27017}:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME:-smhit}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD:-change_me}
+      - MONGO_INITDB_DATABASE=${MONGO_DB_NAME:-smhit}
+    volumes:
+      - mongo-data:/data/db
+    networks: [smhit-net]
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ---------------------------------------------------------
+  # Cache / files (BullMQ + rate-limit + sessions révocables)
+  # ---------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: smhit-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    networks: [smhit-net]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------------------------------------
+  # Stockage fichiers S3-compatible (scans + PDF rapports)
+  # ---------------------------------------------------------
+  minio:
+    image: minio/minio:latest
+    container_name: smhit-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    ports:
+      - "${MINIO_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-smhit}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-change_me_too}
+    volumes:
+      - minio-data:/data
+    networks: [smhit-net]
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  smhit-net:
+    driver: bridge
+
+volumes:
+  mongo-data:
+  redis-data:
+  minio-data:
+  api-uploads:

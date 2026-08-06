@@ -1,0 +1,24 @@
+{
+  "fiche_type": "DESINSECTISATION",
+  "layout_version": "v01",
+  "description": "Template de layout pour la fiche désinsectisation — §7.2.",
+  "header_fields": [
+    { "key": "client_name", "label": "Client" },
+    { "key": "site_name", "label": "Site" },
+    { "key": "date", "label": "Date" }
+  ],
+  "row_unit": "ligne",
+  "columns": [
+    { "key": "zoneTraitee", "label": "Zone traitée", "type": "text" },
+    { "key": "produit.refCode_raw", "label": "Réf. produit", "type": "text" },
+    { "key": "produit.concentration", "label": "Concentration", "type": "text" },
+    { "key": "produit.numLot", "label": "N° Lot", "type": "text" },
+    { "key": "produit.dlc", "label": "DLC", "type": "text" },
+    { "key": "observations", "label": "Observations", "type": "text" }
+  ],
+  "signature_fields": [
+    { "key": "signatures.agent", "label": "Agent" },
+    { "key": "signatures.hygienisteSMHIT", "label": "Hygiéniste SMHIT" },
+    { "key": "signatures.responsableClient", "label": "Responsable client" }
+  ]
+}

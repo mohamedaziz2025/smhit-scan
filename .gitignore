@@ -1,0 +1,39 @@
+# --- Node (api / web) ---
+node_modules/
+.next/
+dist/
+build/
+*.tsbuildinfo
+npm-debug.log*
+.env
+.env.local
+.env.*.local
+
+# --- Python (ai-ocr) ---
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+
+# --- Flutter (mobile) ---
+mobile/.dart_tool/
+mobile/.flutter-plugin-registrant/
+mobile/.pub-cache/
+mobile/.pub/
+mobile/build/
+mobile/**/ios/Pods/
+mobile/**/android/.gradle/
+*.iml
+
+# --- Infra / uploads ---
+minio-data/
+mongo-data/
+redis-data/
+uploads/
+*.log
+
+# --- OS / editors ---
+.DS_Store
+.vscode/
+.idea/

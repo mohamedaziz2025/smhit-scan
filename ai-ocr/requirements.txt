@@ -1,0 +1,13 @@
+fastapi==0.112.2
+uvicorn[standard]==0.30.6
+pydantic==2.8.2
+python-multipart==0.0.9
+opencv-python-headless==4.10.0.84
+numpy==1.26.4
+rapidfuzz==3.9.6
+
+# OCR — PaddleOCR (lourd : ~700 Mo avec les modèles fr).
+# Activé au Module 3 (pipeline complet). Laissé commenté ici pour garder
+# un squelette léger et rapide à builder ; décommenter pour le pipeline réel.
+# paddleocr==2.8.1
+# paddlepaddle==2.6.2
