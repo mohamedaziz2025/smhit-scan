@@ -6,6 +6,17 @@ import { z } from "zod";
  * Toute variable manquante/mal typée fait échouer le boot immédiatement
  * plutôt que de laisser une erreur silencieuse en runtime.
  */
+
+// ⚠️ z.coerce.boolean() ne fait PAS ce qu'on croit sur une valeur venant de
+// process.env : c'est toujours une string, et `Boolean("false")` vaut...
+// `true` en JS (toute string non vide est truthy). Un `MINIO_USE_SSL=false`
+// deviendrait silencieusement `true`. On compare explicitement à "true".
+const booleanFromEnv = (defaultValue: boolean) =>
+  z
+    .string()
+    .optional()
+    .transform((v) => (v === undefined ? defaultValue : v === "true"));
+
 const envSchema = z.object({
   PORT: z.coerce.number().default(4000),
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
@@ -23,7 +34,7 @@ const envSchema = z.object({
 
   MINIO_ENDPOINT: z.string().default("localhost"),
   MINIO_PORT: z.coerce.number().default(9000),
-  MINIO_USE_SSL: z.coerce.boolean().default(false),
+  MINIO_USE_SSL: booleanFromEnv(false),
   MINIO_ROOT_USER: z.string().optional(),
   MINIO_ROOT_PASSWORD: z.string().optional(),
   MINIO_BUCKET: z.string().default("smhit-files"),
