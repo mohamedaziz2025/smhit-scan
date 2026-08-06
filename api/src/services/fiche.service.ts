@@ -3,6 +3,7 @@ import { ApiError } from "../middlewares/errorHandler";
 import { normalizeToUtcMidnight } from "../utils/date";
 import { uploadScanImages } from "./upload.service";
 import { extractFiche } from "./ocr.service";
+import { generateOrUpdateReportForFiche } from "./report.service";
 import { FicheStatus, FicheType } from "../types/enums";
 
 interface ScanInput {
@@ -99,7 +100,7 @@ function applyExtractionToFiche(
   }
 }
 
-/** Verrouille les corrections agent et déclenche la génération du rapport (Module 5). */
+/** Verrouille les corrections agent et déclenche la génération du rapport (§5, §8). */
 export async function validateFiche(ficheId: string): Promise<IFiche> {
   const fiche = await Fiche.findById(ficheId);
   if (!fiche) throw new ApiError(404, "Fiche introuvable");
@@ -111,6 +112,15 @@ export async function validateFiche(ficheId: string): Promise<IFiche> {
   fiche.status = FicheStatus.AGENT_VALIDATED;
   fiche.agentValidatedAt = new Date();
   await fiche.save();
+
+  // Génération/mise à jour du rapport mensuel (§5 workflow). Une erreur ici
+  // ne doit pas invalider la fiche déjà verrouillée côté agent — le rapport
+  // pourra être régénéré via POST /reports/generate.
+  try {
+    await generateOrUpdateReportForFiche(fiche);
+  } catch (err) {
+    console.error("⚠️  Génération du rapport échouée :", (err as Error).message);
+  }
 
   return fiche;
 }

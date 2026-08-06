@@ -5,6 +5,7 @@ import { usersRouter } from "./users.route";
 import { clientsRouter } from "./clients.route";
 import { productsRouter } from "./products.route";
 import { fichesRouter } from "./fiches.route";
+import { reportsRouter } from "./reports.route";
 
 /**
  * Point d'entrée unique des routes de l'API.
@@ -27,3 +28,4 @@ router.use("/users", usersRouter);
 router.use("/clients", clientsRouter);
 router.use("/products", productsRouter);
 router.use("/fiches", fichesRouter);
+router.use("/reports", reportsRouter);
