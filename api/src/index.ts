@@ -7,6 +7,7 @@ import morgan from "morgan";
 import { env } from "./config/env";
 import { connectDB } from "./config/db";
 import "./config/redis"; // établit la connexion au chargement
+import { corsOptions } from "./config/cors";
 import { errorHandler, notFound } from "./middlewares/errorHandler";
 import { router } from "./routes";
 
@@ -16,7 +17,7 @@ async function bootstrap() {
   const app = express();
 
   app.use(helmet());
-  app.use(cors({ origin: env.CORS_ORIGIN, credentials: true }));
+  app.use(cors(corsOptions));
   app.use(express.json({ limit: "10mb" })); // fiches + JSON OCR peuvent être volumineux
   app.use(cookieParser());
   app.use(morgan(env.NODE_ENV === "development" ? "dev" : "combined"));
