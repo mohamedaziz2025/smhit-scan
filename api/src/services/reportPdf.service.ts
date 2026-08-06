@@ -25,12 +25,13 @@ export async function generateReportPdf(report: IReport): Promise<Buffer> {
   const done = new Promise<Buffer>((resolve) => doc.on("end", () => resolve(Buffer.concat(chunks))));
 
   const addWatermark = () => {
+    // `lineBreak: false` et pas de `width`/`align` : avec un `.rotate()`
+    // actif, le calcul de mise en page multi-ligne de PDFKit se trompe sur
+    // la hauteur restante de page et déclenche des `addPage()` en cascade
+    // (repéré via un rapport de test à 23 pages pour une seule fiche).
     doc.save();
-    doc
-      .fillColor(BRAND, 0.06)
-      .fontSize(90)
-      .rotate(-35, { origin: [297, 420] })
-      .text("SMHIT", 80, 380, { width: 500, align: "center" });
+    doc.rotate(-35, { origin: [297, 420] });
+    doc.fillColor(BRAND, 0.06).fontSize(90).text("SMHIT", 80, 380, { lineBreak: false });
     doc.restore();
   };
 
