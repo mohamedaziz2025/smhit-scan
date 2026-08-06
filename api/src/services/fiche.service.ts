@@ -46,29 +46,38 @@ export async function createFicheFromScan(input: ScanInput): Promise<IFiche> {
     interventionsCount: 1,
   });
 
-  if (input.files.length > 0) {
-    const scanImageUrls = await uploadScanImages(input.files, fiche.id);
-    fiche.scanImageUrls = scanImageUrls;
-  }
-
-  // Extraction IA (§7) — pré-remplit la fiche. Le pipeline complet arrive au
-  // Module 3 ; en attendant, l'appel renvoie un contrat vide (confiance 0).
+  // Toute erreur à partir d'ici doit supprimer la fiche fraîchement créée :
+  // sinon elle reste bloquée en SCANNING et, à cause de l'index unique
+  // {clientId, siteId, interventionDate}, condamne définitivement le "jour"
+  // pour ce client/site tant qu'un admin ne l'a pas nettoyée à la main.
   try {
     if (input.files.length > 0) {
-      const imageBase64 = input.files[0].buffer.toString("base64");
-      const extraction = await extractFiche(input.ficheType, imageBase64);
-      fiche.ocrConfidence = extraction.overall_confidence;
-      applyExtractionToFiche(fiche, input.ficheType, extraction);
+      const scanImageUrls = await uploadScanImages(input.files, fiche.id);
+      fiche.scanImageUrls = scanImageUrls;
     }
-  } catch (err) {
-    // L'IA est indisponible : on n'échoue pas la création, l'agent saisira
-    // la fiche manuellement — le scan papier reste consultable.
-    console.error("⚠️  Extraction IA/OCR indisponible :", (err as Error).message);
-  }
 
-  fiche.status = FicheStatus.DRAFT;
-  await fiche.save();
-  return fiche;
+    // Extraction IA (§7) — pré-remplit la fiche. Le pipeline complet arrive
+    // au Module 3 ; en attendant, l'appel renvoie un contrat vide (confiance
+    // 0). Contrairement à l'upload, une IA indisponible n'est pas
+    // bloquante : l'agent saisira la fiche manuellement.
+    try {
+      if (input.files.length > 0) {
+        const imageBase64 = input.files[0].buffer.toString("base64");
+        const extraction = await extractFiche(input.ficheType, imageBase64);
+        fiche.ocrConfidence = extraction.overall_confidence;
+        applyExtractionToFiche(fiche, input.ficheType, extraction);
+      }
+    } catch (err) {
+      console.error("⚠️  Extraction IA/OCR indisponible :", (err as Error).message);
+    }
+
+    fiche.status = FicheStatus.DRAFT;
+    await fiche.save();
+    return fiche;
+  } catch (err) {
+    await Fiche.findByIdAndDelete(fiche.id);
+    throw err;
+  }
 }
 
 function applyExtractionToFiche(
