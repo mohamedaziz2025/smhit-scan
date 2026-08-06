@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 import 'app/router.dart';
 import 'app/theme.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  // Doit être initialisé avant tout accès à TokenStorage (persistance JWT) —
+  // sans ça, Hive.openBox() lève une exception au premier login.
+  await Hive.initFlutter();
   runApp(const ProviderScope(child: SmhitApp()));
 }
 

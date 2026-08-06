@@ -12,7 +12,7 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final auth = ref.watch(authControllerProvider);
+    final auth = ref.watch(authControllerProvider).user;
     final role = auth?.role ?? UserRole.agent;
 
     final tiles = <_Tile>[

@@ -10,15 +10,50 @@ import '../../core/widgets/glass_card.dart';
 import '../../core/widgets/gradient_button.dart';
 import '../../core/widgets/smhit_logo.dart';
 
-/// Écran de connexion — design premium (§12).
-/// L'appel réel POST /auth/login (JWT access/refresh) arrive au Module 6 ;
-/// en attendant, 3 rôles "démo" permettent de tester le routage RBAC.
-class LoginScreen extends ConsumerWidget {
+/// Écran de connexion — Module 6 : vraie authentification (POST /auth/login).
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends ConsumerState<LoginScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _emailCtrl = TextEditingController();
+  final _passwordCtrl = TextEditingController();
+  bool _obscure = true;
+
+  @override
+  void initState() {
+    super.initState();
+    // Restaure la session si un token valide est déjà persisté (Hive).
+    Future.microtask(() => ref.read(authControllerProvider.notifier).restoreSession());
+  }
+
+  @override
+  void dispose() {
+    _emailCtrl.dispose();
+    _passwordCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    final ok = await ref
+        .read(authControllerProvider.notifier)
+        .login(_emailCtrl.text.trim(), _passwordCtrl.text);
+    if (ok && mounted) context.go('/home');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final authState = ref.watch(authControllerProvider);
     final health = ref.watch(apiHealthProvider);
+
+    ref.listen(authControllerProvider, (previous, next) {
+      if (next.isAuthenticated && mounted) context.go('/home');
+    });
 
     return Scaffold(
       body: DecoratedBox(
@@ -39,127 +74,78 @@ class LoginScreen extends ConsumerWidget {
                   ),
                   child: GlassCard(
                     padding: const EdgeInsets.fromLTRB(28, 36, 28, 28),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const SmhitLogo(),
-                        const SizedBox(height: 20),
-                        Text("SMHIT", style: Theme.of(context).textTheme.displayMedium),
-                        const SizedBox(height: 6),
-                        Text(
-                          "Lutte antiparasitaire — fiches numériques",
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                        const SizedBox(height: 32),
-                        _RoleTile(
-                          icon: Icons.qr_code_scanner_rounded,
-                          title: "Agent",
-                          subtitle: "Scanner et valider des fiches",
-                          isPrimary: true,
-                          onTap: () => _loginAs(ref, context, UserRole.agent, "Agent Démo"),
-                        ),
-                        const SizedBox(height: 12),
-                        _RoleTile(
-                          icon: Icons.fact_check_outlined,
-                          title: "Admin",
-                          subtitle: "Valider rapports, analyser",
-                          onTap: () => _loginAs(ref, context, UserRole.admin, "Admin Démo"),
-                        ),
-                        const SizedBox(height: 12),
-                        _RoleTile(
-                          icon: Icons.admin_panel_settings_outlined,
-                          title: "Super Admin",
-                          subtitle: "Accès total, paramètres système",
-                          onTap: () => _loginAs(ref, context, UserRole.superAdmin, "Super Admin Démo"),
-                        ),
-                        const SizedBox(height: 28),
-                        _ApiHealthBadge(health: health, onRetry: () => ref.invalidate(apiHealthProvider)),
-                        const SizedBox(height: 6),
-                        Text(
-                          ApiConfig.baseUrl,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(color: SmhitColors.muted, fontSize: 10.5),
-                        ),
-                      ],
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const SmhitLogo(),
+                          const SizedBox(height: 20),
+                          Text("SMHIT", style: Theme.of(context).textTheme.displayMedium),
+                          const SizedBox(height: 6),
+                          Text(
+                            "Lutte antiparasitaire — fiches numériques",
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                          const SizedBox(height: 32),
+                          TextFormField(
+                            controller: _emailCtrl,
+                            keyboardType: TextInputType.emailAddress,
+                            textInputAction: TextInputAction.next,
+                            decoration: const InputDecoration(
+                              labelText: "Email",
+                              prefixIcon: Icon(Icons.mail_outline_rounded),
+                            ),
+                            validator: (v) => (v == null || !v.contains('@')) ? "Email invalide" : null,
+                          ),
+                          const SizedBox(height: 14),
+                          TextFormField(
+                            controller: _passwordCtrl,
+                            obscureText: _obscure,
+                            textInputAction: TextInputAction.done,
+                            onFieldSubmitted: (_) => _submit(),
+                            decoration: InputDecoration(
+                              labelText: "Mot de passe",
+                              prefixIcon: const Icon(Icons.lock_outline_rounded),
+                              suffixIcon: IconButton(
+                                icon: Icon(_obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined),
+                                onPressed: () => setState(() => _obscure = !_obscure),
+                              ),
+                            ),
+                            validator: (v) => (v == null || v.isEmpty) ? "Mot de passe requis" : null,
+                          ),
+                          if (authState.error != null) ...[
+                            const SizedBox(height: 12),
+                            Text(authState.error!, style: const TextStyle(color: SmhitColors.danger, fontSize: 12.5)),
+                          ],
+                          const SizedBox(height: 24),
+                          authState.isLoading
+                              ? const Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 14),
+                                  child: CircularProgressIndicator(color: SmhitColors.brand),
+                                )
+                              : GradientButton(
+                                  label: "Se connecter",
+                                  icon: Icons.login_rounded,
+                                  onPressed: _submit,
+                                ),
+                          const SizedBox(height: 24),
+                          _ApiHealthBadge(health: health, onRetry: () => ref.invalidate(apiHealthProvider)),
+                          const SizedBox(height: 6),
+                          Text(
+                            ApiConfig.baseUrl,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(color: SmhitColors.muted, fontSize: 10.5),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  void _loginAs(WidgetRef ref, BuildContext context, UserRole role, String name) {
-    ref.read(authControllerProvider.notifier).login(AuthUser(fullName: name, role: role));
-    context.go('/home');
-  }
-}
-
-class _RoleTile extends StatefulWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final bool isPrimary;
-  final VoidCallback onTap;
-
-  const _RoleTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-    this.isPrimary = false,
-  });
-
-  @override
-  State<_RoleTile> createState() => _RoleTileState();
-}
-
-class _RoleTileState extends State<_RoleTile> {
-  bool _pressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    if (widget.isPrimary) {
-      return GradientButton(label: widget.title, icon: widget.icon, onPressed: widget.onTap);
-    }
-
-    return GestureDetector(
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapCancel: () => setState(() => _pressed = false),
-      onTapUp: (_) => setState(() => _pressed = false),
-      onTap: widget.onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 120),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: _pressed ? SmhitColors.brandLight : SmhitColors.bg,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: SmhitColors.border),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(color: SmhitColors.brandLight, borderRadius: BorderRadius.circular(10)),
-              child: Icon(widget.icon, color: SmhitColors.brand600, size: 20),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(widget.title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14.5)),
-                  Text(widget.subtitle, style: const TextStyle(color: SmhitColors.muted, fontSize: 12)),
-                ],
-              ),
-            ),
-            const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: SmhitColors.muted),
-          ],
         ),
       ),
     );

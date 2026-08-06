@@ -21,12 +21,13 @@ import '../features/scan/scan_screen.dart';
 /// - ADMIN/SUPER_ADMIN : /clients, /reports, /analytics (+ web parity)
 /// - SUPER_ADMIN       : /admin/users, /admin/products, /admin/settings
 final routerProvider = Provider<GoRouter>((ref) {
-  final auth = ref.watch(authControllerProvider);
+  final authState = ref.watch(authControllerProvider);
+  final role = authState.user?.role;
 
   return GoRouter(
     initialLocation: '/login',
     redirect: (context, state) {
-      final loggedIn = auth != null;
+      final loggedIn = authState.isAuthenticated;
       final goingToLogin = state.matchedLocation == '/login';
 
       if (!loggedIn && !goingToLogin) return '/login';
@@ -35,10 +36,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       final adminOnly = state.matchedLocation.startsWith('/admin');
       final superAdminOnly = state.matchedLocation.startsWith('/admin/');
       if (loggedIn) {
-        if (superAdminOnly && auth.role != UserRole.superAdmin) return '/home';
-        if (adminOnly &&
-            auth.role != UserRole.admin &&
-            auth.role != UserRole.superAdmin) {
+        if (superAdminOnly && role != UserRole.superAdmin) return '/home';
+        if (adminOnly && role != UserRole.admin && role != UserRole.superAdmin) {
           return '/home';
         }
       }
