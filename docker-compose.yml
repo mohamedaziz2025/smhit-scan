@@ -37,7 +37,11 @@ services:
       - REDIS_URL=${REDIS_URL}
       - AI_OCR_URL=${AI_OCR_URL:-http://ai-ocr:8000}
       - MINIO_ENDPOINT=${MINIO_ENDPOINT:-minio}
-      - MINIO_PORT=${MINIO_PORT:-9000}
+      # Port interne du container minio (toujours 9000, cf. `command: server
+      # /data`) — ne PAS confondre avec ${MINIO_PORT} qui ne pilote que le
+      # mapping hôte:conteneur ci-dessous et peut être remappé sur un serveur
+      # partagé (ex: 9600). api<->minio se parlent via le réseau Docker interne.
+      - MINIO_PORT=9000
       - MINIO_ROOT_USER=${MINIO_ROOT_USER}
       - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
       - MINIO_BUCKET=${MINIO_BUCKET:-smhit-files}
