@@ -63,6 +63,7 @@ async function seed() {
 
   await disconnectDB();
   await mongoose.disconnect().catch(() => {});
+  process.exit(0);
 }
 
 seed().catch((err) => {

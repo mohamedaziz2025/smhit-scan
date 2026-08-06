@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { connectDB } from "../config/db";
+import { redisConnection } from "../config/redis";
 import { createUserWithPassword } from "../services/auth.service";
 import { UserRole } from "../types/enums";
 
@@ -26,9 +27,15 @@ async function seed() {
   }
 
   await mongoose.disconnect();
+  // createUserWithPassword importe (indirectement) le service de refresh
+  // tokens, ce qui ouvre une connexion Redis dès le chargement du module —
+  // sans la fermer explicitement, le process ne se termine jamais.
+  redisConnection.disconnect();
+  process.exit(0);
 }
 
 seed().catch((err) => {
   console.error("❌ Échec du seed admin :", err);
+  redisConnection.disconnect();
   process.exit(1);
 });
