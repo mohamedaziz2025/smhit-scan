@@ -3,9 +3,11 @@ import { ZodError } from "zod";
 
 export class ApiError extends Error {
   status: number;
-  constructor(status: number, message: string) {
+  details?: unknown;
+  constructor(status: number, message: string, details?: unknown) {
     super(message);
     this.status = status;
+    this.details = details;
   }
 }
 
@@ -21,7 +23,7 @@ export function errorHandler(err: unknown, req: Request, res: Response, next: Ne
   }
 
   if (err instanceof ApiError) {
-    res.status(err.status).json({ error: err.message });
+    res.status(err.status).json({ error: err.message, ...(err.details ? { details: err.details } : {}) });
     return;
   }
 
