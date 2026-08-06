@@ -20,26 +20,33 @@ class PlaceholderScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(title)),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 48, color: SmhitColors.brand),
-              const SizedBox(height: 16),
-              Text(
-                title,
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                moduleNote,
-                style: const TextStyle(color: SmhitColors.muted),
-                textAlign: TextAlign.center,
-              ),
-            ],
+      body: DecoratedBox(
+        decoration: const BoxDecoration(gradient: SmhitColors.bgGradient),
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: SmhitColors.brandLight,
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Icon(icon, size: 30, color: SmhitColors.brand600),
+                ),
+                const SizedBox(height: 20),
+                Text(title, style: Theme.of(context).textTheme.headlineSmall, textAlign: TextAlign.center),
+                const SizedBox(height: 8),
+                Text(
+                  moduleNote,
+                  style: const TextStyle(color: SmhitColors.muted, fontSize: 13),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
           ),
         ),
       ),

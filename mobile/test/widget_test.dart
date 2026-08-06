@@ -18,8 +18,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Se connecter — Agent'), findsOneWidget);
-    expect(find.text('Se connecter — Admin'), findsOneWidget);
-    expect(find.text('Se connecter — Super Admin'), findsOneWidget);
+    expect(find.text('SMHIT'), findsOneWidget);
+    expect(find.text('Agent'), findsOneWidget);
+    expect(find.text('Admin'), findsOneWidget);
+    expect(find.text('Super Admin'), findsOneWidget);
+    expect(find.text('API connectée'), findsOneWidget);
   });
 }
