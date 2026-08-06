@@ -9,7 +9,7 @@ import { ApiError } from "../middlewares/errorHandler";
 export const authRouter = Router();
 
 authRouter.post(
-  "/auth/login",
+  "/login",
   asyncHandler(async (req, res) => {
     const { email, password } = loginSchema.parse(req.body);
     const result = await authService.login(email, password);
@@ -18,7 +18,7 @@ authRouter.post(
 );
 
 authRouter.post(
-  "/auth/refresh",
+  "/refresh",
   asyncHandler(async (req, res) => {
     const { refreshToken } = refreshSchema.parse(req.body);
     const result = await authService.refresh(refreshToken);
@@ -27,7 +27,7 @@ authRouter.post(
 );
 
 authRouter.post(
-  "/auth/logout",
+  "/logout",
   asyncHandler(async (req, res) => {
     const { refreshToken } = refreshSchema.parse(req.body);
     await authService.logout(refreshToken);
@@ -36,7 +36,7 @@ authRouter.post(
 );
 
 authRouter.get(
-  "/auth/me",
+  "/me",
   requireAuth,
   asyncHandler(async (req, res) => {
     const user = await User.findById(req.auth!.userId);

@@ -18,7 +18,7 @@ export const usersRouter = Router();
 usersRouter.use(requireAuth, requireRole(UserRole.SUPER_ADMIN));
 
 usersRouter.get(
-  "/users",
+  "/",
   asyncHandler(async (req, res) => {
     const { role, isActive, page = "1", limit = "20" } = req.query as Record<string, string>;
     const filter: Record<string, unknown> = {};
@@ -41,7 +41,7 @@ usersRouter.get(
 );
 
 usersRouter.post(
-  "/users",
+  "/",
   asyncHandler(async (req, res) => {
     const input = createUserSchema.parse(req.body);
     const user = await createUserWithPassword(input);
@@ -50,7 +50,7 @@ usersRouter.post(
 );
 
 usersRouter.get(
-  "/users/:id",
+  "/:id",
   asyncHandler(async (req, res) => {
     const user = await User.findById(req.params.id);
     if (!user) throw new ApiError(404, "Utilisateur introuvable");
@@ -59,7 +59,7 @@ usersRouter.get(
 );
 
 usersRouter.patch(
-  "/users/:id",
+  "/:id",
   asyncHandler(async (req, res) => {
     const input = updateUserSchema.parse(req.body);
     const user = await User.findByIdAndUpdate(req.params.id, input, { new: true });
@@ -69,7 +69,7 @@ usersRouter.patch(
 );
 
 usersRouter.patch(
-  "/users/:id/role",
+  "/:id/role",
   asyncHandler(async (req, res) => {
     const { role } = updateRoleSchema.parse(req.body);
     const user = await User.findByIdAndUpdate(req.params.id, { role }, { new: true });
@@ -79,7 +79,7 @@ usersRouter.patch(
 );
 
 usersRouter.patch(
-  "/users/:id/activate",
+  "/:id/activate",
   asyncHandler(async (req, res) => {
     const { isActive } = activateSchema.parse(req.body);
     const user = await User.findByIdAndUpdate(req.params.id, { isActive }, { new: true });
@@ -91,7 +91,7 @@ usersRouter.patch(
 );
 
 usersRouter.delete(
-  "/users/:id",
+  "/:id",
   asyncHandler(async (req, res) => {
     const user = await User.findByIdAndDelete(req.params.id);
     if (!user) throw new ApiError(404, "Utilisateur introuvable");

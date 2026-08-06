@@ -11,7 +11,7 @@ export const productsRouter = Router();
 productsRouter.use(requireAuth);
 
 productsRouter.get(
-  "/products",
+  "/",
   asyncHandler(async (req, res) => {
     const { search, category, page = "1", limit = "20" } = req.query as Record<string, string>;
     const filter: Record<string, unknown> = { isActive: true };
@@ -40,7 +40,7 @@ productsRouter.get(
  * si rien n'est trouvé (tolère les fautes de frappe / confusions OCR).
  */
 productsRouter.get(
-  "/products/resolve",
+  "/resolve",
   asyncHandler(async (req, res) => {
     const ref = String(req.query.ref ?? "").trim().toUpperCase();
     if (!ref) throw new ApiError(400, "Paramètre ?ref= requis");
@@ -60,7 +60,7 @@ productsRouter.get(
 );
 
 productsRouter.post(
-  "/products",
+  "/",
   requireRole(UserRole.SUPER_ADMIN),
   asyncHandler(async (req, res) => {
     const input = createProductSchema.parse(req.body);
@@ -71,7 +71,7 @@ productsRouter.post(
 );
 
 productsRouter.patch(
-  "/products/:id",
+  "/:id",
   requireRole(UserRole.SUPER_ADMIN),
   asyncHandler(async (req, res) => {
     const input = updateProductSchema.parse(req.body);
@@ -83,7 +83,7 @@ productsRouter.patch(
 );
 
 productsRouter.delete(
-  "/products/:id",
+  "/:id",
   requireRole(UserRole.SUPER_ADMIN),
   asyncHandler(async (req, res) => {
     const product = await Product.findByIdAndUpdate(req.params.id, { isActive: false }, { new: true });

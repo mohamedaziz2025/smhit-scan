@@ -15,7 +15,7 @@ export const fichesRouter = Router();
 fichesRouter.use(requireAuth);
 
 fichesRouter.post(
-  "/fiches/scan",
+  "/scan",
   uploadScanImages,
   asyncHandler(async (req, res) => {
     const body = scanFicheSchema.parse(req.body);
@@ -46,7 +46,7 @@ fichesRouter.post(
 );
 
 fichesRouter.get(
-  "/fiches",
+  "/",
   asyncHandler(async (req, res) => {
     const query = listFichesQuerySchema.parse(req.query);
     const filter: Record<string, unknown> = {};
@@ -79,7 +79,7 @@ fichesRouter.get(
 );
 
 fichesRouter.get(
-  "/fiches/:id",
+  "/:id",
   asyncHandler(async (req, res) => {
     const fiche = await Fiche.findById(req.params.id);
     if (!fiche) throw new ApiError(404, "Fiche introuvable");
@@ -89,7 +89,7 @@ fichesRouter.get(
 );
 
 fichesRouter.patch(
-  "/fiches/:id",
+  "/:id",
   asyncHandler(async (req, res) => {
     const fiche = await Fiche.findById(req.params.id);
     if (!fiche) throw new ApiError(404, "Fiche introuvable");
@@ -105,7 +105,7 @@ fichesRouter.patch(
 );
 
 fichesRouter.post(
-  "/fiches/:id/validate",
+  "/:id/validate",
   asyncHandler(async (req, res) => {
     const fiche = await Fiche.findById(req.params.id);
     if (!fiche) throw new ApiError(404, "Fiche introuvable");

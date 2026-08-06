@@ -21,7 +21,7 @@ export const clientsRouter = Router();
 clientsRouter.use(requireAuth);
 
 clientsRouter.get(
-  "/clients",
+  "/",
   asyncHandler(async (req, res) => {
     const { search, page = "1", limit = "20" } = req.query as Record<string, string>;
     const filter: Record<string, unknown> = { isActive: true };
@@ -43,7 +43,7 @@ clientsRouter.get(
 );
 
 clientsRouter.post(
-  "/clients",
+  "/",
   requireRole(UserRole.ADMIN, UserRole.SUPER_ADMIN),
   asyncHandler(async (req, res) => {
     const input = createClientSchema.parse(req.body);
@@ -54,7 +54,7 @@ clientsRouter.post(
 );
 
 clientsRouter.get(
-  "/clients/:id",
+  "/:id",
   asyncHandler(async (req, res) => {
     const client = await Client.findById(req.params.id);
     if (!client) throw new ApiError(404, "Client introuvable");
@@ -64,7 +64,7 @@ clientsRouter.get(
 );
 
 clientsRouter.patch(
-  "/clients/:id",
+  "/:id",
   requireRole(UserRole.SUPER_ADMIN),
   asyncHandler(async (req, res) => {
     const input = updateClientSchema.parse(req.body);
@@ -76,7 +76,7 @@ clientsRouter.patch(
 );
 
 clientsRouter.delete(
-  "/clients/:id",
+  "/:id",
   requireRole(UserRole.SUPER_ADMIN),
   asyncHandler(async (req, res) => {
     const client = await Client.findByIdAndUpdate(req.params.id, { isActive: false }, { new: true });
@@ -91,7 +91,7 @@ clientsRouter.delete(
 /* ------------------------------------------------------------------ */
 
 clientsRouter.get(
-  "/clients/:clientId/sites",
+  "/:clientId/sites",
   asyncHandler(async (req, res) => {
     if (!(await canAccessClient(req.auth!, req.params.clientId))) {
       throw new ApiError(403, "Hors de votre périmètre");
@@ -102,7 +102,7 @@ clientsRouter.get(
 );
 
 clientsRouter.post(
-  "/clients/:clientId/sites",
+  "/:clientId/sites",
   requireRole(UserRole.ADMIN, UserRole.SUPER_ADMIN),
   asyncHandler(async (req, res) => {
     const input = createSiteSchema.parse(req.body);
@@ -113,7 +113,7 @@ clientsRouter.post(
 );
 
 clientsRouter.patch(
-  "/clients/:clientId/sites/:siteId",
+  "/:clientId/sites/:siteId",
   requireRole(UserRole.SUPER_ADMIN),
   asyncHandler(async (req, res) => {
     const input = updateSiteSchema.parse(req.body);
@@ -129,7 +129,7 @@ clientsRouter.patch(
 );
 
 clientsRouter.delete(
-  "/clients/:clientId/sites/:siteId",
+  "/:clientId/sites/:siteId",
   requireRole(UserRole.SUPER_ADMIN),
   asyncHandler(async (req, res) => {
     const site = await Site.findOneAndUpdate(

@@ -6,7 +6,7 @@ import { asyncHandler } from "../utils/asyncHandler";
 export const healthRouter = Router();
 
 healthRouter.get(
-  "/health",
+  "/",
   asyncHandler(async (_req, res) => {
     const mongoState = mongoose.connection.readyState; // 1 = connected
     const redisState = redisConnection.status; // "ready" = connected
