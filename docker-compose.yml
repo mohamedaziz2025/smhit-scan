@@ -50,6 +50,10 @@ services:
         condition: service_started
     volumes:
       - api-uploads:/app/uploads
+      # products.json vit à la racine du monorepo (Annexe A) — monté en
+      # lecture seule plutôt que dupliqué dans l'image, pour rester la seule
+      # source de vérité pour `npm run seed:products`.
+      - ./products.json:/app/products.json:ro
     networks: [smhit-net]
 
   # ---------------------------------------------------------
