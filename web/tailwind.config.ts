@@ -11,6 +11,7 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
+          light: "#FFF1E6",
           DEFAULT: "#F26A21",
           600: "#D2551A",
         },
@@ -18,6 +19,7 @@ const config: Config = {
         muted: "#64748B",
         bg: "#F8FAFC",
         surface: "#FFFFFF",
+        border: "#E7EAF0",
         success: "#16A34A",
         warning: "#F59E0B",
         danger: "#DC2626",
@@ -26,8 +28,12 @@ const config: Config = {
         card: "16px",
       },
       fontFamily: {
-        heading: ["Sora", "Space Grotesk", "sans-serif"],
-        body: ["Inter", "sans-serif"],
+        heading: ["var(--font-heading)", "Sora", "sans-serif"],
+        body: ["var(--font-body)", "Inter", "sans-serif"],
+      },
+      boxShadow: {
+        soft: "0 12px 24px -8px rgb(15 23 42 / 0.06), 0 2px 4px rgb(15 23 42 / 0.04)",
+        brand: "0 8px 20px -4px rgb(242 106 33 / 0.35)",
       },
     },
   },

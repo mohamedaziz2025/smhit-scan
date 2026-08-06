@@ -25,7 +25,13 @@ export async function uploadScanImages(
   return keys;
 }
 
-/** URL signée temporaire (24h) pour afficher un scan dans le viewer fiche (§10/§11). */
-export async function getSignedScanUrl(key: string): Promise<string> {
-  return minioClient.presignedGetObject(env.MINIO_BUCKET, key, 24 * 60 * 60);
+/**
+ * Flux de lecture d'un scan — même logique que le proxy PDF
+ * (reportPdf.service.ts) : MinIO n'est joignable que sur le réseau Docker
+ * interne, une URL présignée pointant sur son hostname interne serait donc
+ * injoignable par un client externe. L'image transite par l'API.
+ */
+export async function streamScanImage(key: string) {
+  await ensureBucket();
+  return minioClient.getObject(env.MINIO_BUCKET, key);
 }

@@ -1,20 +1,20 @@
-/**
- * Placeholder de la racine — le vrai /dashboard (KPIs, fiches du jour,
- * rapports en attente) arrive au Module 7 (§10 du cahier des charges).
- */
-export default function HomePage() {
+"use client";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/store/auth";
+
+export default function RootPage() {
+  const router = useRouter();
+  const user = useAuthStore((s) => s.user);
+
+  useEffect(() => {
+    router.replace(user ? "/dashboard" : "/login");
+  }, [user, router]);
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-4 p-8 text-center">
-      <span className="rounded-full bg-brand/10 px-4 py-1 text-sm font-medium text-brand-600">
-        SMHIT
-      </span>
-      <h1 className="font-heading text-3xl font-semibold text-ink">
-        Digitalisation des fiches de lutte antiparasitaire
-      </h1>
-      <p className="max-w-md text-muted">
-        Squelette Module 1 — le dashboard (clients, fiches, rapports, analytics)
-        sera construit au Module 7.
-      </p>
-    </main>
+    <div className="flex min-h-screen items-center justify-center bg-bg">
+      <div className="h-8 w-8 animate-spin rounded-full border-2 border-brand border-t-transparent" />
+    </div>
   );
 }

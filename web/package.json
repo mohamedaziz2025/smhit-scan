@@ -14,11 +14,12 @@
     "@tanstack/react-table": "^8.20.1",
     "axios": "^1.7.7",
     "clsx": "^2.1.1",
+    "lucide-react": "^1.29.0",
     "next": "14.2.5",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.52.2",
-    "recharts": "^2.12.7",
+    "recharts": "^2.15.4",
     "zod": "^3.23.8",
     "zustand": "^4.5.5"
   },

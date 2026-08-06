@@ -9,6 +9,7 @@ import { canAccessClient } from "../utils/scope";
 import { canEditFiche, canValidateFiche, canViewFiche } from "../utils/fichePermissions";
 import { auditFromRequest } from "../utils/audit";
 import * as ficheService from "../services/fiche.service";
+import { streamScanImage } from "../services/upload.service";
 import { listFichesQuerySchema, scanFicheSchema, updateFicheSchema } from "../validators/fiche.validators";
 
 export const fichesRouter = Router();
@@ -116,5 +117,26 @@ fichesRouter.post(
 
     // Génération automatique du rapport (§5, §8) — Module 5.
     res.json(validated);
+  }),
+);
+
+fichesRouter.get(
+  "/:id/images/:index",
+  asyncHandler(async (req, res) => {
+    const fiche = await Fiche.findById(req.params.id);
+    if (!fiche) throw new ApiError(404, "Fiche introuvable");
+    if (!canViewFiche(req.auth!, fiche)) throw new ApiError(403, "Accès refusé à cette fiche");
+
+    const index = Number(req.params.index);
+    const key = fiche.scanImageUrls[index];
+    if (!key) throw new ApiError(404, "Image introuvable");
+
+    const stream = await streamScanImage(key);
+    res.setHeader("Content-Type", key.endsWith(".png") ? "image/png" : "image/jpeg");
+    stream.on("error", (err) => {
+      console.error("Erreur de lecture image MinIO :", err.message);
+      if (!res.headersSent) res.status(500).json({ error: "Impossible de lire l'image" });
+    });
+    stream.pipe(res);
   }),
 );
