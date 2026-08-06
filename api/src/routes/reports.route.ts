@@ -6,7 +6,7 @@ import { asyncHandler } from "../utils/asyncHandler";
 import { ApiError } from "../middlewares/errorHandler";
 import { canAccessClient } from "../utils/scope";
 import { auditFromRequest } from "../utils/audit";
-import { generateAndStoreReportPdf, getSignedReportPdfUrl } from "../services/reportPdf.service";
+import { generateAndStoreReportPdf, streamReportPdf } from "../services/reportPdf.service";
 import { generateReportForPeriod, recomputeReport } from "../services/report.service";
 import {
   generateReportSchema,
@@ -135,7 +135,13 @@ reportsRouter.get(
       await report.save();
     }
 
-    const url = await getSignedReportPdfUrl(report.pdfUrl);
-    res.redirect(url);
+    const stream = await streamReportPdf(report.pdfUrl);
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `inline; filename="rapport-${report.id}.pdf"`);
+    stream.on("error", (err) => {
+      console.error("Erreur de lecture du PDF MinIO :", err.message);
+      if (!res.headersSent) res.status(500).json({ error: "Impossible de lire le PDF" });
+    });
+    stream.pipe(res);
   }),
 );

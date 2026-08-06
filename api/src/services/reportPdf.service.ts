@@ -178,8 +178,17 @@ export async function generateAndStoreReportPdf(report: IReport): Promise<string
   return key;
 }
 
-export async function getSignedReportPdfUrl(key: string): Promise<string> {
-  return minioClient.presignedGetObject(env.MINIO_BUCKET, key, 24 * 60 * 60);
+/**
+ * Renvoie le flux de lecture d'un PDF stocké — utilisé pour le proxy-download
+ * (§13 stockage privé). On évite volontairement les URLs présignées
+ * "brutes" ici : MinIO n'est joignable que sur le réseau Docker interne
+ * (§ déploiement, verrouillé sur un serveur partagé), donc une URL présignée
+ * pointant sur l'hostname interne ("minio:9000") serait injoignable par un
+ * client externe (mobile, navigateur). Le PDF transite par l'API à la place.
+ */
+export async function streamReportPdf(key: string) {
+  await ensureBucket();
+  return minioClient.getObject(env.MINIO_BUCKET, key);
 }
 
 /* ------------------------------------------------------------------ */
