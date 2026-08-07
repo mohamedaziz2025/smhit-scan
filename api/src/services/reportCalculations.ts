@@ -87,13 +87,27 @@ export function computeCommentairesInternes(stats: ZoneInterneStats): string[] {
 }
 
 /* ------------------------------------------------------------------ */
-/* Matrice de risque & tendance (§8) — valeurs par défaut, paramétrables */
-/* par Super Admin au Module 8 (settings, non encore branché ici).      */
+/* Matrice de risque & tendance (§8) — seuils paramétrables par Super   */
+/* Admin (Module 8, GET/PATCH /settings) ; valeurs par défaut ci-dessous */
+/* si aucun `Settings` n'a encore été chargé.                           */
 /* ------------------------------------------------------------------ */
 
-export function computeRiskLevel(appatsConsommes: number, captures: number): RiskLevel {
+export interface RiskThresholds {
+  riskMoyenMax: number;
+  riskEleveMinCaptures: number;
+}
+
+export const DEFAULT_RISK_THRESHOLDS: RiskThresholds = { riskMoyenMax: 3, riskEleveMinCaptures: 1 };
+
+export function computeRiskLevel(
+  appatsConsommes: number,
+  captures: number,
+  thresholds: RiskThresholds = DEFAULT_RISK_THRESHOLDS,
+): RiskLevel {
   if (appatsConsommes === 0 && captures === 0) return RiskLevel.FAIBLE;
-  if (captures >= 1 || appatsConsommes > 3) return RiskLevel.ELEVE;
+  if (captures >= thresholds.riskEleveMinCaptures || appatsConsommes > thresholds.riskMoyenMax) {
+    return RiskLevel.ELEVE;
+  }
   return RiskLevel.MOYEN;
 }
 

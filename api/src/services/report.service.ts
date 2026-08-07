@@ -9,6 +9,7 @@ import {
   computeTrendSymbol,
   totalsForFiche,
 } from "./reportCalculations";
+import { getSettings } from "./settings.service";
 
 const MOIS_FR = [
   "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
@@ -195,6 +196,8 @@ async function computeDesinsectisation(fiches: IFiche[]) {
 /** Tendance 12 mois (§8) — recalculée à partir des Fiches validées/verrouillées. */
 async function computeTendance(clientId: string, siteId: string, upTo: Date) {
   const from = new Date(Date.UTC(upTo.getUTCFullYear(), upTo.getUTCMonth() - 11, 1));
+  const settings = await getSettings();
+  const thresholds = { riskMoyenMax: settings.riskMoyenMax, riskEleveMinCaptures: settings.riskEleveMinCaptures };
 
   const fiches = await Fiche.find({
     clientId,
@@ -233,7 +236,7 @@ async function computeTendance(clientId: string, siteId: string, upTo: Date) {
       appatsConsommes: totals.appatsConsommes,
       cadavres: totals.cadavres,
       tendance: computeTrendSymbol(totals.appatsConsommes, previous),
-      risque: computeRiskLevel(totals.appatsConsommes, totals.cadavres),
+      risque: computeRiskLevel(totals.appatsConsommes, totals.cadavres, thresholds),
     });
     previous = totals.appatsConsommes;
   }
