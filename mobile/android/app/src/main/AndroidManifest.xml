@@ -1,4 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Requis pour tout appel réseau (API SMHIT) — sans ça, Dio échoue
+         silencieusement avec une erreur de permission sur device réel. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Requis par image_picker pour la capture photo (écran Scan, §11). -->
+    <uses-permission android:name="android.permission.CAMERA"/>
     <application
         android:label="smhit_mobile"
         android:name="${applicationName}"
