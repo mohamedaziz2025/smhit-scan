@@ -5,6 +5,7 @@ python-multipart==0.0.9
 opencv-python-headless==4.10.0.84
 numpy==1.26.4
 rapidfuzz==3.9.6
+Pillow==10.4.0  # tests/generate_synthetic_form.py uniquement (pas utilisé par le service en prod)
 
 # OCR — PaddleOCR (lourd : ~700 Mo avec les modèles fr).
 # Activé au Module 3 (pipeline complet). Laissé commenté ici pour garder

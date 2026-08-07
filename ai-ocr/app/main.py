@@ -6,6 +6,7 @@ from fastapi import FastAPI, HTTPException
 
 from .config import CONFIDENCE_THRESHOLD, LAYOUTS_DIR
 from .matching import match_product
+from .pipeline import run_pipeline
 from .schemas import (
     ExtractRequest,
     ExtractResponse,
@@ -23,7 +24,7 @@ app = FastAPI(
         "Microservice IA/OCR autonome (sans API tierce) — extraction des fiches "
         "de lutte antiparasitaire scannées. Voir §7 du cahier des charges."
     ),
-    version="0.1.0",
+    version="0.2.0",
 )
 
 
@@ -63,26 +64,33 @@ def extract(payload: ExtractRequest) -> ExtractResponse:
       1. Prétraitement image (deskew, threshold) — OpenCV
       2. Détection tableau/cellules — morphologie OpenCV + template de layout
       3. Détection cases cochées — densité de pixels par cellule
-      4. OCR des cellules texte — PaddleOCR (fr + chiffres)
+      4. OCR des cellules texte — PaddleOCR (fr + chiffres), si installé
       5. Matching des références produits — RapidFuzz (voir match_product)
 
-    NOTE — squelette Module 1 : seules les étapes d'infra/contrat sont posées
-    ici. Le pipeline OpenCV/PaddleOCR complet est construit au Module 3
-    (§14). Cet endpoint valide déjà le contrat d'API et renvoie une réponse
-    structurée conforme, avec confiance nulle et un warning explicite, pour
-    que l'intégration Express (Module 4) puisse être développée en parallèle.
+    Robustesse : toute erreur du pipeline (image illisible, aucun tableau
+    détecté, dépendance manquante) est absorbée et renvoyée comme une
+    réponse de contrat valide à confiance nulle plutôt que de propager une
+    500 — l'agent complète alors la fiche manuellement (§7.4 : "l'agent
+    reste maître").
     """
     if not payload.image_base64:
         raise HTTPException(status_code=400, detail="image_base64 manquant")
 
-    logger.info("extract() appelé pour fiche_type=%s (pipeline OCR = Module 3)", payload.fiche_type)
-
-    return ExtractResponse(
-        overall_confidence=0.0,
-        header=HeaderResult(),
-        sections={},
-        warnings=[
-            "Pipeline OCR non implémenté (Module 3) — réponse de contrat vide.",
-            f"Seuil de confiance configuré : {CONFIDENCE_THRESHOLD}",
-        ],
-    )
+    try:
+        result = run_pipeline(
+            payload.fiche_type,
+            payload.image_base64,
+            [c.model_dump() for c in payload.product_catalog],
+        )
+        return ExtractResponse(**result)
+    except Exception as err:  # noqa: BLE001 — on ne veut jamais 500 ici, cf. docstring
+        logger.exception("Échec du pipeline d'extraction pour fiche_type=%s", payload.fiche_type)
+        return ExtractResponse(
+            overall_confidence=0.0,
+            header=HeaderResult(),
+            sections={},
+            warnings=[
+                f"Extraction impossible : {err}",
+                f"Seuil de confiance configuré : {CONFIDENCE_THRESHOLD}",
+            ],
+        )
