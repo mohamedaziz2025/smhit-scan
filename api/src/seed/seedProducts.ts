@@ -9,6 +9,8 @@ interface SeedProduct {
   code: string;
   name: string;
   category: ProductCategory;
+  activeSubstance?: string;
+  concentration?: string;
 }
 
 // products.json est fourni à la racine du monorepo (Annexe A du cahier des charges).
@@ -51,10 +53,19 @@ async function seed() {
       existing.name = p.name;
       existing.category = p.category;
       existing.isToxic = isToxic;
+      if (p.activeSubstance) existing.activeSubstance = p.activeSubstance;
+      if (p.concentration) existing.concentration = p.concentration;
       await existing.save();
       updated++;
     } else {
-      await Product.create({ code, name: p.name, category: p.category, isToxic });
+      await Product.create({
+        code,
+        name: p.name,
+        category: p.category,
+        isToxic,
+        activeSubstance: p.activeSubstance,
+        concentration: p.concentration,
+      });
       created++;
     }
   }

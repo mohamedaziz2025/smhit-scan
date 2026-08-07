@@ -42,17 +42,17 @@
   {
     "code": "PLDRT005",
     "name": "GARDEN COL",
-    "category": "rodenticide"
+    "category": "glue_board"
   },
   {
     "code": "PLDRT010",
     "name": "GLUE MOUSE AND RAT",
-    "category": "rodenticide"
+    "category": "glue_board"
   },
   {
     "code": "PLDRT011",
     "name": "GLUE TRAPS VERT",
-    "category": "rodenticide"
+    "category": "glue_board"
   },
   {
     "code": "PLDRT015",
@@ -67,12 +67,14 @@
   {
     "code": "PLDRT021",
     "name": "RAMET BLOC",
-    "category": "rodenticide"
+    "category": "rodenticide",
+    "activeSubstance": "Chlorophacinone"
   },
   {
     "code": "PLDRT022",
     "name": "RAMET PATE",
-    "category": "rodenticide"
+    "category": "rodenticide",
+    "activeSubstance": "Chlorophacinone"
   },
   {
     "code": "PLDRT024",
@@ -87,22 +89,22 @@
   {
     "code": "PLDRT041",
     "name": "PLAQUE A COLLE",
-    "category": "rodenticide"
+    "category": "glue_board"
   },
   {
     "code": "PLDRT042",
     "name": "PLAQUE A COLLE/2",
-    "category": "rodenticide"
+    "category": "glue_board"
   },
   {
     "code": "PLDRT043",
     "name": "PLAQUE A COLLE/3",
-    "category": "rodenticide"
+    "category": "glue_board"
   },
   {
     "code": "PLDRT045",
     "name": "PLAQUE A COLLE 0.5",
-    "category": "rodenticide"
+    "category": "glue_board"
   },
   {
     "code": "PLDRT046",
@@ -182,7 +184,9 @@
   {
     "code": "PLDSI029",
     "name": "TOUAREG 5L",
-    "category": "insecticide"
+    "category": "insecticide",
+    "activeSubstance": "Permethrine",
+    "concentration": "5 %"
   },
   {
     "code": "PLDSI031",
