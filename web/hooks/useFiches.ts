@@ -13,12 +13,38 @@ export interface FicheDto {
   ocrConfidence?: number;
   deratExterne?: { zones: ZoneDto[] };
   deratInterne?: { zones: ZoneDto[] };
-  desinsectisation?: { lignes: unknown[] };
+  desinsectisation?: { lignes: LigneDesinsectDto[]; observationsGenerales?: string };
+}
+
+export interface ProduitDto {
+  refCode?: string;
+  name?: string;
+  codeProduit?: string;
+  numLot?: string;
+  concentration?: string;
+  dlc?: string;
+}
+
+export interface PosteDto {
+  posteNo: number;
+  // Dératisation externe : intact/appatAltere/presenceCadavres/consomme/disparu.
+  // Dératisation interne : intact/plaqueAlteree/presenceCadavres/disparu.
+  etatAppat?: Record<string, boolean>;
+  etatPlaque?: Record<string, boolean>;
+  action?: { remplace?: boolean };
+  produit?: ProduitDto;
+  etatPorteAppat?: { inaccessible?: boolean; disparu?: boolean; malFixe?: boolean; casse?: boolean };
 }
 
 export interface ZoneDto {
   zoneLabel: string;
-  postes: Array<Record<string, unknown>>;
+  postes: PosteDto[];
+}
+
+export interface LigneDesinsectDto {
+  zoneTraitee: string;
+  produit?: ProduitDto;
+  observations?: string;
 }
 
 export function useFiches(params: { clientId?: string; status?: string; page?: number } = {}) {

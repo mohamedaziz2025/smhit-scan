@@ -11,7 +11,7 @@ import '../../data/repositories/product_repository.dart';
 const _externeFields = [
   ('intact', 'Intact'),
   ('appatAltere', 'Appât altéré'),
-  ('presenceCadavres', 'Présence cadavres'),
+  ('presenceCadavres', 'Présence des cadavres'),
   ('consomme', 'Consommé'),
   ('disparu', 'Disparu'),
 ];
@@ -19,7 +19,7 @@ const _externeFields = [
 const _interneFields = [
   ('intact', 'Intact'),
   ('plaqueAlteree', 'Plaque altérée'),
-  ('presenceCadavres', 'Présence cadavres'),
+  ('presenceCadavres', 'Présence des cadavres'),
   ('disparu', 'Disparu'),
 ];
 

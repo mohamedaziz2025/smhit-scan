@@ -40,11 +40,15 @@ export async function generateReportPdf(report: IReport): Promise<Buffer> {
   doc.fillColor(BRAND).fontSize(28).font("Helvetica-Bold").text("SMHIT", 50, 60);
   doc
     .fillColor(MUTED)
-    .fontSize(10)
+    .fontSize(9)
+    .font("Helvetica-Bold")
+    .text("Société de Maintenance et Hygiène Industrielle Tunisienne", 50, 92)
     .font("Helvetica")
-    .text("Système de digitalisation des fiches de lutte antiparasitaire", 50, 92);
+    .text("Société Agréée Par Le Ministère De L'Environnement — Société Agréée Par Le Ministère De La Santé Publique")
+    .text("M.F: 020715RAM000 — Zone Artisanale Bouargoub 8040")
+    .text("Certifiée ISO 9001 V2015 (n°01 100 2215618) & ISO 14001 V2015 (n°01 104 2215618)");
 
-  doc.moveDown(4);
+  doc.moveDown(3);
   doc.fillColor(INK).fontSize(20).font("Helvetica-Bold").text("Rapport d'intervention", { align: "center" });
   doc.moveDown(0.5);
   doc.fontSize(13).font("Helvetica").fillColor(MUTED).text(report.period.label, { align: "center" });
@@ -57,6 +61,15 @@ export async function generateReportPdf(report: IReport): Promise<Buffer> {
 
   const derat = report.deratisation as
     | {
+        planning?: Array<{ date: Date; treatment: string; hygienistName: string }>;
+        produitsUtilises?: Array<{
+          nuisible: string;
+          intervention: string;
+          type: string;
+          produit: string;
+          activeSubstance: string;
+          localisation: string;
+        }>;
         interventions?: Array<{
           index: number;
           zonesExternes: Array<{ zone: string; nbPiege: number; nbPrise: number; pctPrise: number; nbCadavre: number; pctCadavre: number }>;
@@ -73,7 +86,44 @@ export async function generateReportPdf(report: IReport): Promise<Buffer> {
   if (derat?.interventions?.length) {
     doc.addPage();
     addWatermark();
-    sectionTitle(doc, "I. Dératisation");
+    sectionTitle(doc, "I. Traitement de dératisation");
+    doc
+      .fontSize(9)
+      .font("Helvetica")
+      .fillColor(INK)
+      .text(
+        "La dératisation est une opération visant à prévenir, détecter et éliminer la présence des rongeurs " +
+          "tels que les rats et les souris, qui peuvent représenter un risque pour l'hygiène, la sécurité " +
+          "sanitaire et l'intégrité des installations. Elle repose sur la mise en place de dispositifs de " +
+          "surveillance et de contrôle, notamment des postes d'appâtage sécurisés installés dans les zones " +
+          "stratégiques du site afin d'assurer une maîtrise efficace de toute activité de rongeurs.",
+        { align: "justify" },
+      );
+    doc.moveDown(0.8);
+
+    if (derat.planning?.length) {
+      doc.fontSize(10).font("Helvetica-Bold").text("Planning des interventions");
+      drawTable(
+        doc,
+        ["Date intervention", "Traitement effectué", "Hygiéniste SMHIT"],
+        derat.planning.map((p) => [formatDate(p.date), p.treatment, p.hygienistName]),
+      );
+      doc.moveDown(0.8);
+    }
+
+    if (derat.produitsUtilises?.length) {
+      doc.fontSize(10).font("Helvetica-Bold").text("Produits utilisés");
+      drawTable(
+        doc,
+        ["Nuisible", "Intervention", "Type", "Produit", "Matière active", "Localisation"],
+        derat.produitsUtilises.map((p) => [p.nuisible, p.intervention, p.type, p.produit, p.activeSubstance, p.localisation]),
+      );
+      doc.moveDown(0.8);
+    }
+
+    doc.fontSize(10).font("Helvetica-Bold").fillColor(BRAND).text("Analyse des données");
+    doc.fillColor(INK);
+    doc.moveDown(0.3);
 
     for (const intervention of derat.interventions) {
       doc.fontSize(12).font("Helvetica-Bold").fillColor(INK).text(`Intervention n°${intervention.index}`);
@@ -113,6 +163,16 @@ export async function generateReportPdf(report: IReport): Promise<Buffer> {
     doc.addPage();
     addWatermark();
     sectionTitle(doc, "Analyse de tendance (12 mois)");
+    doc
+      .fontSize(8)
+      .font("Helvetica")
+      .fillColor(MUTED)
+      .text(
+        "Matrice de risque : Faible = 0 consommation et 0 capture · Moyen = 1 à 3 consommations d'appâts · " +
+          "Élevé = > 3 consommations et/ou ≥ 1 capture.  Tendance : ↗ augmentation · ↘ diminution · → stable.",
+      );
+    doc.fillColor(INK);
+    doc.moveDown(0.5);
     drawTrendChart(doc, derat.tendance.months);
 
     doc.moveDown(1);
@@ -138,21 +198,58 @@ export async function generateReportPdf(report: IReport): Promise<Buffer> {
 
   // --- Section II : Désinsectisation ---
   const desinsect = report.desinsectisation as
-    | { zonesTraitees: string[]; produits: Array<{ nuisible: string; produit: string; activeSubstance: string; concentration: string; numLot: string }>; conclusion: string }
+    | {
+        zonesTraitees: string[];
+        detailZones?: Array<{
+          zoneTraitee: string;
+          designationProduit: string;
+          codeProduit: string;
+          concentration: string;
+          numLot: string;
+          dlc: string;
+          observations: string;
+        }>;
+        produits: Array<{ nuisible: string; produit: string; activeSubstance: string; concentration: string; numLot: string }>;
+        conclusion: string;
+      }
     | undefined;
 
   if (desinsect) {
     doc.addPage();
     addWatermark();
-    sectionTitle(doc, "II. Désinsectisation");
-    doc.fontSize(10).font("Helvetica-Bold").text("Zones traitées : ", { continued: true });
-    doc.font("Helvetica").text(desinsect.zonesTraitees.join(", ") || "—");
-    doc.moveDown(0.5);
+    sectionTitle(doc, "II. Traitement de désinsectisation");
+    doc
+      .fontSize(9)
+      .font("Helvetica")
+      .fillColor(INK)
+      .text(
+        "La désinsectisation consiste à prévenir et à contrôler la présence d'insectes nuisibles (moustiques, " +
+          "mouches, fourmis, etc.) pouvant compromettre l'hygiène et la sécurité sanitaire des locaux.",
+        { align: "justify" },
+      );
+    doc.moveDown(0.6);
 
-    if (desinsect.produits.length > 0) {
+    doc.fontSize(10).font("Helvetica-Bold").text("Zones traitées");
+    doc.font("Helvetica");
+    for (const zone of desinsect.zonesTraitees.length ? desinsect.zonesTraitees : ["—"]) doc.text(`• ${zone}`);
+    doc.moveDown(0.6);
+
+    if (desinsect.detailZones?.length) {
+      doc.fontSize(10).font("Helvetica-Bold").text("Détail par zone traitée");
       drawTable(
         doc,
-        ["Nuisible", "Produit", "Matière active", "Concentration", "N° Lot"],
+        ["Zone traitée", "Désignation produit", "Code produit", "Concentration", "N° lot", "DLC"],
+        desinsect.detailZones.map((z) => [z.zoneTraitee, z.designationProduit, z.codeProduit, z.concentration, z.numLot, z.dlc]),
+      );
+      doc.moveDown(0.6);
+    }
+
+    if (desinsect.produits.length > 0) {
+      doc.fontSize(10).font("Helvetica-Bold").fillColor(BRAND).text("Conclusion Générale");
+      doc.fillColor(INK);
+      drawTable(
+        doc,
+        ["Nuisible ciblé", "Produit", "Matière active", "Concentration", "N° du lot"],
         desinsect.produits.map((p) => [p.nuisible, p.produit, p.activeSubstance, p.concentration, p.numLot]),
       );
     }

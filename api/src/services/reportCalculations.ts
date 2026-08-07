@@ -5,9 +5,20 @@ import { RiskLevel } from "../types/enums";
 /* Formules §8 — zones externes / internes                            */
 /* ------------------------------------------------------------------ */
 
+interface PorteAppatLike {
+  inaccessible?: boolean;
+  disparu?: boolean;
+  malFixe?: boolean;
+  casse?: boolean;
+}
+
+function hasAnomalie(porteAppat?: PorteAppatLike): boolean {
+  return Boolean(porteAppat?.inaccessible || porteAppat?.disparu || porteAppat?.malFixe || porteAppat?.casse);
+}
+
 interface PosteExterneLike {
   etatAppat?: { consomme?: boolean; presenceCadavres?: boolean };
-  etatPorteAppat?: { inaccessible?: boolean; disparu?: boolean; malFixe?: boolean; casse?: boolean };
+  etatPorteAppat?: PorteAppatLike;
 }
 
 interface ZoneExterneLike {
@@ -41,6 +52,7 @@ export function computeZoneExterneStats(zone: ZoneExterneLike): ZoneExterneStats
 
 interface PosteInterneLike {
   etatPlaque?: { presenceCadavres?: boolean };
+  etatPorteAppat?: PorteAppatLike;
 }
 
 interface ZoneInterneLike {
@@ -61,28 +73,57 @@ export function computeZoneInterneStats(zone: ZoneInterneLike): ZoneInterneStats
   return { zone: zone.zoneLabel, nbPiege, nbCadavre, indiceCapture: nbPiege > 0 ? round2(nbCadavre / nbPiege) : 0 };
 }
 
-/** Commentaires auto (§8, règles fixes). */
-export function computeCommentairesExternes(zone: ZoneExterneLike, stats: ZoneExterneStats): string[] {
+/**
+ * Commentaires auto (§8, règles fixes) — générés **par intervention**, toutes
+ * zones externes confondues (et non par zone individuelle) : c'est la
+ * granularité exacte du modèle papier (`Rapport standard`), où une seule
+ * liste de puces couvre l'ensemble des zones d'une même intervention.
+ */
+export function computeCommentairesExternes(zones: ZoneExterneLike[], statsList: ZoneExterneStats[]): string[] {
   const comments: string[] = [];
-  if (stats.nbPrise > 0) {
-    comments.push(`Présence d'une activité de rongeurs au niveau de ${zone.zoneLabel}.`);
-  }
-  const anomalie = zone.postes.some(
-    (p) => p.etatPorteAppat?.inaccessible || p.etatPorteAppat?.disparu || p.etatPorteAppat?.malFixe || p.etatPorteAppat?.casse,
-  );
+
+  statsList.forEach((s) => {
+    if (s.nbPrise > 0) comments.push(`Présence d'une activité de rongeurs au niveau de ${s.zone}.`);
+  });
+
+  const anomalie = zones.some((z) => z.postes.some((p) => hasAnomalie(p.etatPorteAppat)));
   if (!anomalie) {
-    comments.push("Aucun dysfonctionnement ni dégradation des postes ; dispositif en bon état.");
+    comments.push(
+      "Aucun dysfonctionnement ni aucune dégradation des postes d'appâtage n'ont été constatés ; l'ensemble du dispositif est en bon état de fonctionnement.",
+    );
   }
-  if (stats.nbCadavre === 0) {
-    comments.push("Aucun cadavre de rongeur observé.");
+
+  const totalCadavres = statsList.reduce((sum, s) => sum + s.nbCadavre, 0);
+  if (totalCadavres === 0) {
+    comments.push("Aucun cadavre de rongeur n'a été observé sur les zones externes de site.");
   }
+
   return comments;
 }
 
-export function computeCommentairesInternes(stats: ZoneInterneStats): string[] {
+export function computeCommentairesInternes(zones: ZoneInterneLike[], statsList: ZoneInterneStats[]): string[] {
   const comments: string[] = [];
-  if (stats.nbCadavre === 0) comments.push("Aucun cadavre de rongeur observé.");
-  else comments.push(`Présence de ${stats.nbCadavre} cadavre(s) au niveau de ${stats.zone}.`);
+  const totalCadavres = statsList.reduce((sum, s) => sum + s.nbCadavre, 0);
+
+  if (totalCadavres === 0) {
+    comments.push("Aucune activité de rongeurs n'a été détectée sur l'ensemble des zones interne de site lors de l'inspection.");
+  } else {
+    statsList.forEach((s) => {
+      if (s.nbCadavre > 0) comments.push(`Présence de ${s.nbCadavre} cadavre(s) au niveau de ${s.zone}.`);
+    });
+  }
+
+  const anomalie = zones.some((z) => z.postes.some((p) => hasAnomalie(p.etatPorteAppat)));
+  if (!anomalie) {
+    comments.push(
+      "Aucun dysfonctionnement ni aucune dégradation des postes d'appâtage n'ont été constatés ; l'ensemble du dispositif est en bon état de fonctionnement.",
+    );
+  }
+
+  if (totalCadavres === 0) {
+    comments.push("Aucun cadavre de rongeur n'a été observé sur les zones interne de site.");
+  }
+
   return comments;
 }
 
@@ -137,8 +178,8 @@ export function computeInterventionFromFiche(fiche: IFiche, index: number): Inte
   const zonesExternes = zonesExternesRaw.map(computeZoneExterneStats);
   const zonesInternes = zonesInternesRaw.map(computeZoneInterneStats);
 
-  const commentairesExternes = zonesExternesRaw.flatMap((z, i) => computeCommentairesExternes(z, zonesExternes[i]));
-  const commentairesInternes = zonesInternesRaw.flatMap((_z, i) => computeCommentairesInternes(zonesInternes[i]));
+  const commentairesExternes = computeCommentairesExternes(zonesExternesRaw, zonesExternes);
+  const commentairesInternes = computeCommentairesInternes(zonesInternesRaw, zonesInternes);
 
   return { index: index + 1, zonesExternes, zonesInternes, commentairesExternes, commentairesInternes };
 }

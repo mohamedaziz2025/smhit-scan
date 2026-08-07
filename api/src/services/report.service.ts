@@ -113,7 +113,7 @@ export async function recomputeReport(report: IReport): Promise<IReport> {
 
   const planning = fiches.map((f) => ({
     date: f.interventionDate,
-    treatment: "Dératisation",
+    treatment: describeTreatment(f),
     hygienistName: agentNameById.get(f.createdByAgentId.toString()) ?? "—",
   }));
 
@@ -138,32 +138,93 @@ export async function recomputeReport(report: IReport): Promise<IReport> {
   return report;
 }
 
-async function collectProduitsUtilises(fiches: IFiche[]) {
-  const refCodes = new Set<string>();
-  for (const f of fiches) {
-    for (const zone of (f.deratExterne?.zones ?? []) as Array<{ postes: Array<{ produit?: { refCode?: string } }> }>) {
-      for (const poste of zone.postes) if (poste.produit?.refCode) refCodes.add(poste.produit.refCode);
-    }
-    for (const zone of (f.deratInterne?.zones ?? []) as Array<{ postes: Array<{ produit?: { refCode?: string } }> }>) {
-      for (const poste of zone.postes) if (poste.produit?.refCode) refCodes.add(poste.produit.refCode);
-    }
-  }
-  if (refCodes.size === 0) return [];
+/** "Traitement effectué" du planning (§6.5) — reflète les sections réellement remplies sur la fiche. */
+function describeTreatment(fiche: IFiche): string {
+  const hasDerat = Boolean(fiche.deratExterne?.zones?.length || fiche.deratInterne?.zones?.length);
+  const hasDesinsect = Boolean(fiche.desinsectisation?.lignes?.length);
+  if (hasDerat && hasDesinsect) return "Traitement de dératisation et désinsectisation";
+  if (hasDesinsect) return "Traitement de désinsectisation";
+  return "Traitement de dératisation";
+}
 
-  const products = await Product.find({ code: { $in: [...refCodes] } }).lean();
-  return products.map((p) => ({
-    nuisible: "Rongeurs",
-    intervention: "Dératisation",
-    type: p.category,
-    activeSubstance: p.activeSubstance ?? "—",
-    localisation: "Zones traitées",
-  }));
+const ORDINALS_FR = ["1ère", "2ème", "3ème", "4ème", "5ème", "6ème"];
+
+/**
+ * Tableau "Produits utilisés" (§6.5, modèle `Rapport standard`) : une ligne
+ * par (type de poste, référence produit, localisation), avec la mention de
+ * l'intervention concernée ("1ère Intervention" / "2ème Intervention" /
+ * "Chaque Intervention" si le même produit est utilisé à tous les passages —
+ * exactement la logique du tableau papier : Ramet bloc en 1ère intervention,
+ * Ramet pate en 2ème, Garden col à chaque intervention).
+ */
+async function collectProduitsUtilises(fiches: IFiche[]) {
+  interface Row {
+    interventionIndex: number;
+    type: string;
+    refCode: string;
+    localisation: string;
+  }
+  const rows: Row[] = [];
+
+  fiches.forEach((f, i) => {
+    const externes = (f.deratExterne?.zones ?? []) as Array<{ postes: Array<{ produit?: { refCode?: string } }> }>;
+    for (const zone of externes) {
+      for (const poste of zone.postes) {
+        if (poste.produit?.refCode) {
+          rows.push({ interventionIndex: i + 1, type: "Appât chimique", refCode: poste.produit.refCode, localisation: "Locaux externes" });
+        }
+      }
+    }
+    const internes = (f.deratInterne?.zones ?? []) as Array<{ postes: Array<{ produit?: { refCode?: string } }> }>;
+    for (const zone of internes) {
+      for (const poste of zone.postes) {
+        if (poste.produit?.refCode) {
+          rows.push({ interventionIndex: i + 1, type: "Plaque à colle", refCode: poste.produit.refCode, localisation: "Locaux internes" });
+        }
+      }
+    }
+  });
+
+  if (rows.length === 0) return [];
+
+  // Regroupe par (type, référence, localisation) -> ensemble des interventions où il apparaît.
+  const grouped = new Map<string, { type: string; refCode: string; localisation: string; indexes: Set<number> }>();
+  for (const r of rows) {
+    const key = `${r.type}|${r.refCode}|${r.localisation}`;
+    const g = grouped.get(key) ?? { type: r.type, refCode: r.refCode, localisation: r.localisation, indexes: new Set<number>() };
+    g.indexes.add(r.interventionIndex);
+    grouped.set(key, g);
+  }
+
+  const refCodes = [...new Set(rows.map((r) => r.refCode))];
+  const products = await Product.find({ code: { $in: refCodes } }).lean();
+  const byCode = new Map(products.map((p) => [p.code, p]));
+  const totalInterventions = fiches.length;
+
+  return [...grouped.values()].map((g) => {
+    const product = byCode.get(g.refCode);
+    const sortedIndexes = [...g.indexes].sort((a, b) => a - b);
+    const intervention =
+      sortedIndexes.length === totalInterventions && totalInterventions > 1
+        ? "Chaque Intervention"
+        : sortedIndexes.map((idx) => `${ORDINALS_FR[idx - 1] ?? `${idx}ème`} Intervention`).join(", ");
+
+    return {
+      nuisible: "Rongeur",
+      intervention,
+      type: g.type,
+      produit: product?.name ?? g.refCode,
+      activeSubstance: product?.activeSubstance ?? (product?.isToxic === false ? "Non toxique" : "—"),
+      localisation: g.localisation,
+    };
+  });
 }
 
 async function computeDesinsectisation(fiches: IFiche[]) {
   const lignes = fiches.flatMap((f) => (f.desinsectisation?.lignes ?? []) as Array<{
     zoneTraitee: string;
-    produit?: { refCode?: string; concentration?: string; numLot?: string };
+    produit?: { refCode?: string; codeProduit?: string; concentration?: string; numLot?: string; dlc?: string };
+    observations?: string;
   }>);
 
   if (lignes.length === 0) return undefined;
@@ -173,22 +234,41 @@ async function computeDesinsectisation(fiches: IFiche[]) {
   const products = await Product.find({ code: { $in: refCodes } }).lean();
   const byCode = new Map(products.map((p) => [p.code, p]));
 
+  // Détail par zone traitée (§6.4, table brute reprise du modèle papier :
+  // Zone traitée | Désignation Produit | Code Produit | Concentration | N° lot | DLC | Observations).
+  const detailZones = lignes.map((l) => {
+    const p = l.produit?.refCode ? byCode.get(l.produit.refCode) : undefined;
+    return {
+      zoneTraitee: l.zoneTraitee,
+      designationProduit: p?.name ?? l.produit?.refCode ?? "—",
+      codeProduit: l.produit?.codeProduit ?? l.produit?.refCode ?? "—",
+      concentration: l.produit?.concentration ?? p?.concentration ?? "—",
+      numLot: l.produit?.numLot ?? "—",
+      dlc: l.produit?.dlc ?? "—",
+      observations: l.observations ?? "",
+    };
+  });
+
+  // Résumé "Conclusion Générale" (§6.5, table agrégée par nuisible/produit).
   const produits = lignes
     .filter((l) => l.produit?.refCode)
     .map((l) => {
       const p = byCode.get(l.produit!.refCode!);
       return {
-        nuisible: "Insectes",
+        nuisible: "Insectes, volants et rampants",
         produit: p?.name ?? l.produit!.refCode,
         activeSubstance: p?.activeSubstance ?? "—",
         concentration: l.produit?.concentration ?? p?.concentration ?? "—",
         numLot: l.produit?.numLot ?? "—",
       };
     });
+  // Dédoublonne le résumé (plusieurs lignes de zones peuvent partager le même produit).
+  const produitsUniques = [...new Map(produits.map((p) => [`${p.produit}|${p.numLot}`, p])).values()];
 
   return {
     zonesTraitees,
-    produits,
+    detailZones,
+    produits: produitsUniques,
     conclusion: "Traitement insecticide réalisé conformément au protocole SMHIT.",
   };
 }
