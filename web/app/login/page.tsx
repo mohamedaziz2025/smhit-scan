@@ -18,8 +18,10 @@ export default function LoginPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     try {
-      await login.mutateAsync({ email, password });
-      router.push("/dashboard");
+      const result = await login.mutateAsync({ email, password });
+      // §2 : l'agent n'a pas accès au dashboard admin — il atterrit sur son
+      // propre point d'entrée (scan), identique à l'écran d'accueil mobile.
+      router.push(result.user.role === "AGENT" ? "/scan" : "/dashboard");
     } catch {
       // erreur affichée via login.isError ci-dessous
     }
@@ -35,7 +37,7 @@ export default function LoginPage() {
           <SmhitLogo size={56} />
           <h1 className="mt-5 font-heading text-2xl font-bold text-ink">SMHIT</h1>
           <p className="mt-1 text-center text-sm text-muted">
-            Dashboard Admin — fiches, rapports &amp; analytics
+            Fiches, rapports &amp; analytics de lutte antiparasitaire
           </p>
         </div>
 

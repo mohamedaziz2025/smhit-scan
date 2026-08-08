@@ -12,12 +12,18 @@ import {
   Package,
   Settings,
   LogOut,
+  ScanLine,
+  ClipboardList,
 } from "lucide-react";
 import { SmhitLogo } from "./ui/SmhitLogo";
 import { useAuthStore } from "@/store/auth";
 import { useLogout } from "@/hooks/useAuth";
 
 const NAV = [
+  // Agent (§2/§11) : mêmes actions que sur mobile, disponibles aussi sur web.
+  { href: "/scan", label: "Scanner une fiche", icon: ScanLine, roles: ["AGENT"] },
+  { href: "/my-fiches", label: "Mes fiches", icon: ClipboardList, roles: ["AGENT"] },
+  // Admin / SuperAdmin
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["ADMIN", "SUPER_ADMIN"] },
   { href: "/clients", label: "Clients", icon: Building2, roles: ["ADMIN", "SUPER_ADMIN"] },
   { href: "/reports", label: "Rapports", icon: FileCheck2, roles: ["ADMIN", "SUPER_ADMIN"] },

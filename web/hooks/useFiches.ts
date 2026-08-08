@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 
 export interface FicheDto {
@@ -65,5 +65,57 @@ export function useFiche(id: string | undefined) {
       return data as FicheDto;
     },
     enabled: !!id,
+  });
+}
+
+/**
+ * Scan (§11) — équivalent web de l'écran mobile : l'agent choisit
+ * client/site, uploade une ou plusieurs images (au lieu de la caméra native),
+ * POST /fiches/scan crée la fiche DRAFT pré-remplie par l'IA/OCR.
+ */
+export function useCreateFicheScan() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { clientId: string; siteId: string; ficheType: string; files: File[] }) => {
+      const form = new FormData();
+      form.append("clientId", input.clientId);
+      form.append("siteId", input.siteId);
+      form.append("ficheType", input.ficheType);
+      input.files.forEach((f) => form.append("images", f));
+
+      const { data } = await api.post("/fiches/scan", form, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      return data as FicheDto;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["fiches"] }),
+  });
+}
+
+export function usePatchFiche() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...input }: { id: string } & Partial<FicheDto>) => {
+      const { data } = await api.patch(`/fiches/${id}`, input);
+      return data as FicheDto;
+    },
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ["fiche", id] });
+      qc.invalidateQueries({ queryKey: ["fiches"] });
+    },
+  });
+}
+
+export function useValidateFiche() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await api.post(`/fiches/${id}/validate`);
+      return data as FicheDto;
+    },
+    onSuccess: (_, id) => {
+      qc.invalidateQueries({ queryKey: ["fiche", id] });
+      qc.invalidateQueries({ queryKey: ["fiches"] });
+    },
   });
 }

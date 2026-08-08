@@ -20,8 +20,9 @@ interface AuthStoreState {
 }
 
 /**
- * Session persistée en localStorage (accès web réservé Admin/SuperAdmin,
- * cf. matrice §2). Le refresh transparent est géré par `lib/api.ts`.
+ * Session persistée en localStorage — les 3 rôles (Agent/Admin/SuperAdmin)
+ * peuvent se connecter au web ; le contenu affiché varie selon le rôle
+ * (AppShell filtre la nav, §2). Le refresh transparent est géré par `lib/api.ts`.
  *
  * Note hydratation : le composant <AuthGuard> gère le décalage SSR/CSR
  * (localStorage indisponible côté serveur) via un flag `mounted` local

@@ -44,6 +44,16 @@ export function useUpdateProduct() {
   });
 }
 
+/** Résolution réf -> nom commercial (§9), utilisée par l'éditeur de fiche. */
+export function useResolveProduct() {
+  return useMutation({
+    mutationFn: async (ref: string) => {
+      const { data } = await api.get("/products/resolve", { params: { ref } });
+      return data as { code: string; name: string; category: string };
+    },
+  });
+}
+
 export function useDeactivateProduct() {
   const qc = useQueryClient();
   return useMutation({
