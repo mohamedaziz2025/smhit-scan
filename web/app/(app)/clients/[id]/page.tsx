@@ -3,13 +3,15 @@
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { MapPin, FileText, FileCheck2, Store } from "lucide-react";
+import { MapPin, FileText, FileCheck2, Store, Plus, Pencil } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { GradientButton } from "@/components/ui/GradientButton";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { useClient, useSites } from "@/hooks/useClients";
+import { SitePlanEditor } from "@/components/SitePlanEditor";
+import { useClient, useSites, useCreateSite, useUpdateSite, type SiteDto } from "@/hooks/useClients";
 import { useFiches } from "@/hooks/useFiches";
 import { useReports, useGenerateMagasinsReport } from "@/hooks/useReports";
+import { useAuthStore } from "@/store/auth";
 
 const MOIS_FR = [
   "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
@@ -25,10 +27,26 @@ export default function ClientDetailPage() {
   const fiches = useFiches({ clientId: id });
   const reports = useReports({ clientId: id });
   const generateMagasins = useGenerateMagasinsReport();
+  const createSite = useCreateSite(id);
+  const updateSite = useUpdateSite(id);
+  const role = useAuthStore((s) => s.user?.role);
+  const canCreateSite = role === "ADMIN" || role === "SUPER_ADMIN";
+  const canEditSite = role === "SUPER_ADMIN";
+
+  const [editingSite, setEditingSite] = useState<SiteDto | "new" | null>(null);
 
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [year, setYear] = useState(now.getFullYear());
+
+  async function handleSaveSite(input: { name: string; zonesConfig: SiteDto["zonesConfig"] }) {
+    if (editingSite === "new") {
+      await createSite.mutateAsync(input);
+    } else if (editingSite) {
+      await updateSite.mutateAsync({ siteId: editingSite._id, ...input });
+    }
+    setEditingSite(null);
+  }
 
   async function handleGenerateMagasins() {
     const report = await generateMagasins.mutateAsync({ clientId: id, month, year });
@@ -42,17 +60,50 @@ export default function ClientDetailPage() {
         <p className="mt-1 text-sm text-muted">{sites.data?.length ?? 0} site(s)</p>
       </div>
 
+      {editingSite && (
+        <SitePlanEditor
+          initial={editingSite === "new" ? undefined : editingSite}
+          onSave={handleSaveSite}
+          onCancel={() => setEditingSite(null)}
+          saving={createSite.isPending || updateSite.isPending}
+        />
+      )}
+
       <div className="grid gap-6 lg:grid-cols-3">
         <GlassCard>
-          <h2 className="mb-3 flex items-center gap-2 font-heading text-base font-semibold text-ink">
-            <MapPin size={16} className="text-brand" /> Sites
-          </h2>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="flex items-center gap-2 font-heading text-base font-semibold text-ink">
+              <MapPin size={16} className="text-brand" /> Sites
+            </h2>
+            {canCreateSite && (
+              <button onClick={() => setEditingSite("new")} className="text-brand-600 hover:text-brand-700" title="Nouveau site">
+                <Plus size={18} />
+              </button>
+            )}
+          </div>
           <div className="space-y-2">
-            {sites.data?.map((s) => (
-              <div key={s._id} className="rounded-xl bg-bg px-3 py-2 text-sm text-ink">
-                {s.name}
-              </div>
-            ))}
+            {sites.data?.map((s) => {
+              const ext = s.zonesConfig?.externalZones ?? [];
+              const int = s.zonesConfig?.internalZones ?? [];
+              const totalPostes = [...ext, ...int].reduce((sum, z) => sum + z.postCount, 0);
+              return (
+                <div key={s._id} className="flex items-center justify-between rounded-xl bg-bg px-3 py-2">
+                  <div>
+                    <p className="text-sm text-ink">{s.name}</p>
+                    <p className="text-[11px] text-muted">
+                      {ext.length + int.length > 0
+                        ? `${ext.length} zone(s) externe(s), ${int.length} zone(s) interne(s) · ${totalPostes} postes`
+                        : "Aucun plan de postes défini"}
+                    </p>
+                  </div>
+                  {canEditSite && (
+                    <button onClick={() => setEditingSite(s)} className="text-muted hover:text-brand-600" title="Éditer le plan">
+                      <Pencil size={15} />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
             {sites.data?.length === 0 && <p className="text-sm text-muted">Aucun site.</p>}
           </div>
         </GlassCard>

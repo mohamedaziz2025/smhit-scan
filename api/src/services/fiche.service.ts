@@ -1,4 +1,5 @@
 import { Fiche, type IFiche } from "../models/Fiche";
+import { Site } from "../models/Site";
 import { ApiError } from "../middlewares/errorHandler";
 import { normalizeToUtcMidnight } from "../utils/date";
 import { uploadScanImages } from "./upload.service";
@@ -57,6 +58,15 @@ export async function createFicheFromScan(input: ScanInput): Promise<IFiche> {
       fiche.scanImageUrls = scanImageUrls;
     }
 
+    // Plan des postes du site (§6.2, configuré manuellement par l'Admin) —
+    // pré-remplit les zones/postes attendus avant même l'IA, pour que
+    // l'agent n'ait pas à recréer chaque poste à la main. L'extraction OCR
+    // ci-dessous écrase ce plan si elle détecte des données réelles.
+    const site = await Site.findById(input.siteId);
+    if (site?.zonesConfig) {
+      initZonesFromSitePlan(fiche, input.ficheType, site.zonesConfig);
+    }
+
     // Extraction IA (§7) — pré-remplit la fiche. Le pipeline complet arrive
     // au Module 3 ; en attendant, l'appel renvoie un contrat vide (confiance
     // 0). Contrairement à l'upload, une IA indisponible n'est pas
@@ -78,6 +88,51 @@ export async function createFicheFromScan(input: ScanInput): Promise<IFiche> {
   } catch (err) {
     await Fiche.findByIdAndDelete(fiche.id);
     throw err;
+  }
+}
+
+interface ZoneConfig {
+  label: string;
+  postCount: number;
+}
+
+/**
+ * Initialise les zones/postes d'une fiche à partir du plan du site (§6.2)
+ * — chaque poste démarre "vierge" (aucune case cochée), l'agent n'a plus
+ * qu'à cocher plutôt qu'à ajouter un à un les postes prévus.
+ */
+function initZonesFromSitePlan(
+  fiche: IFiche,
+  ficheType: FicheType,
+  zonesConfig: { externalZones: ZoneConfig[]; internalZones: ZoneConfig[] },
+): void {
+  if (ficheType === FicheType.DERATISATION_EXTERNE && zonesConfig.externalZones?.length) {
+    fiche.deratExterne = {
+      zones: zonesConfig.externalZones.map((z) => ({
+        zoneLabel: z.label,
+        postes: Array.from({ length: z.postCount }, (_, i) => ({
+          posteNo: i + 1,
+          etatAppat: {},
+          action: {},
+          produit: {},
+          etatPorteAppat: {},
+        })),
+      })),
+    };
+  }
+  if (ficheType === FicheType.DERATISATION_INTERNE && zonesConfig.internalZones?.length) {
+    fiche.deratInterne = {
+      zones: zonesConfig.internalZones.map((z) => ({
+        zoneLabel: z.label,
+        postes: Array.from({ length: z.postCount }, (_, i) => ({
+          posteNo: i + 1,
+          etatPlaque: {},
+          action: {},
+          produit: {},
+          etatPorteAppat: {},
+        })),
+      })),
+    };
   }
 }
 

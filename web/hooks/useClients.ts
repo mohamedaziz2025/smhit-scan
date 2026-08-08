@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 
 export interface ClientDto {
@@ -8,10 +8,20 @@ export interface ClientDto {
   isActive: boolean;
 }
 
+export interface ZoneConfigDto {
+  label: string;
+  postCount: number;
+}
+
 export interface SiteDto {
   _id: string;
   clientId: string;
   name: string;
+  address?: string;
+  zonesConfig?: {
+    externalZones: ZoneConfigDto[];
+    internalZones: ZoneConfigDto[];
+  };
 }
 
 export function useClients(search?: string) {
@@ -43,5 +53,29 @@ export function useSites(clientId: string | undefined) {
       return data as SiteDto[];
     },
     enabled: !!clientId,
+  });
+}
+
+/** Création de site + plan de postes (§6.2) — Admin+SuperAdmin (§2). */
+export function useCreateSite(clientId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { name: string; zonesConfig?: SiteDto["zonesConfig"] }) => {
+      const { data } = await api.post(`/clients/${clientId}/sites`, input);
+      return data as SiteDto;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["sites", clientId] }),
+  });
+}
+
+/** Modification du plan de postes d'un site existant — SuperAdmin uniquement (§2). */
+export function useUpdateSite(clientId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ siteId, ...input }: { siteId: string; name?: string; zonesConfig?: SiteDto["zonesConfig"] }) => {
+      const { data } = await api.patch(`/clients/${clientId}/sites/${siteId}`, input);
+      return data as SiteDto;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["sites", clientId] }),
   });
 }
