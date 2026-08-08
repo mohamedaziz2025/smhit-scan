@@ -16,7 +16,7 @@ import { GlassCard } from "@/components/ui/GlassCard";
 import { GradientButton } from "@/components/ui/GradientButton";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { useClient } from "@/hooks/useClients";
-import { useReport, usePatchReport, useValidateReport, useReturnReport } from "@/hooks/useReports";
+import { useReport, usePatchReport, useValidateReport, useReturnReport, type ReportDto } from "@/hooks/useReports";
 import { openReportPdf } from "@/lib/downloadPdf";
 
 export default function ReportDetailPage() {
@@ -93,6 +93,8 @@ export default function ReportDetailPage() {
         </GlassCard>
       )}
 
+      {r.magasins && <MagasinsSections magasins={r.magasins} />}
+
       {r.deratisation?.interventions?.map((intervention) => (
         <GlassCard key={intervention.index}>
           <h2 className="mb-3 font-heading text-base font-semibold text-ink">
@@ -163,6 +165,123 @@ export default function ReportDetailPage() {
           </div>
         )}
       </GlassCard>
+    </div>
+  );
+}
+
+/** Rapport Spécifique des Magasins (§ multi-sites) — KPIs + tableaux par local. */
+function MagasinsSections({ magasins }: { magasins: NonNullable<ReportDto["magasins"]> }) {
+  const { kpis, produitsUtilises, suiviInterventions, nonConformites } = magasins;
+
+  return (
+    <>
+      <GlassCard>
+        <h2 className="mb-4 font-heading text-base font-semibold text-ink">KPI du mois</h2>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <Kpi label="Magasins suivis" value={`${kpis.nombreMagasinsSuivis}/${kpis.nombreMagasinsTotal}`} />
+          <Kpi label="Interventions" value={kpis.interventionsRealisees} />
+          <Kpi label="Taux de réalisation" value={`${kpis.tauxRealisation}%`} />
+          <Kpi label="Pièges (total)" value={kpis.nombreTotalPieges} />
+          <Kpi label="Pièges disparus" value={kpis.piegesDisparus} tone="danger" />
+          <Kpi label="Pièges endommagés" value={kpis.piegesEndommages} tone="warning" />
+          <Kpi label="Appâts consommés" value={kpis.appatsConsommes} tone="warning" />
+          <Kpi label="Sites avec activité" value={kpis.sitesAvecActivite} tone="warning" />
+        </div>
+      </GlassCard>
+
+      {produitsUtilises.length > 0 && (
+        <GlassCard>
+          <h2 className="mb-3 font-heading text-base font-semibold text-ink">Produits utilisés</h2>
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="text-xs text-muted">
+                <th className="pb-2">Type</th>
+                <th className="pb-2">Produit</th>
+                <th className="pb-2">Matière active</th>
+              </tr>
+            </thead>
+            <tbody>
+              {produitsUtilises.map((p, i) => (
+                <tr key={i} className="border-t border-border">
+                  <td className="py-2 text-ink">{p.type}</td>
+                  <td className="py-2 text-ink">{p.produit}</td>
+                  <td className="py-2 text-muted">{p.activeSubstance}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </GlassCard>
+      )}
+
+      {suiviInterventions.length > 0 && (
+        <GlassCard>
+          <h2 className="mb-3 font-heading text-base font-semibold text-ink">Suivi des interventions</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="text-xs text-muted">
+                  <th className="pb-2 pr-3">Local</th>
+                  <th className="pb-2 pr-3">Prévus</th>
+                  <th className="pb-2 pr-3">Présents</th>
+                  <th className="pb-2 pr-3">Disparus</th>
+                  <th className="pb-2 pr-3">Endommagés</th>
+                  <th className="pb-2 pr-3">Consommés</th>
+                  <th className="pb-2 pr-3">Couverture</th>
+                  <th className="pb-2">Observation</th>
+                </tr>
+              </thead>
+              <tbody>
+                {suiviInterventions.map((r) => (
+                  <tr key={r.siteId} className="border-t border-border">
+                    <td className="py-2 pr-3 font-medium text-ink">{r.siteName}</td>
+                    <td className="py-2 pr-3 text-muted">{r.piegesPrevus}</td>
+                    <td className="py-2 pr-3 text-muted">{r.presents}</td>
+                    <td className="py-2 pr-3 text-muted">{r.disparus}</td>
+                    <td className="py-2 pr-3 text-muted">{r.endommages}</td>
+                    <td className="py-2 pr-3 text-muted">{r.appatsConsommes}</td>
+                    <td className="py-2 pr-3 text-muted">{r.tauxCouverture}%</td>
+                    <td className="py-2 text-xs text-muted">{r.observation}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </GlassCard>
+      )}
+
+      {nonConformites.length > 0 && (
+        <GlassCard>
+          <h2 className="mb-3 font-heading text-base font-semibold text-ink">Non-conformités et plan d&apos;actions</h2>
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="text-xs text-muted">
+                <th className="pb-2 pr-3">Magasin</th>
+                <th className="pb-2 pr-3">Constat</th>
+                <th className="pb-2">Action corrective</th>
+              </tr>
+            </thead>
+            <tbody>
+              {nonConformites.map((n) => (
+                <tr key={n.numero} className="border-t border-border">
+                  <td className="py-2 pr-3 font-medium text-ink">{n.magasin}</td>
+                  <td className="py-2 pr-3 text-muted">{n.constat}</td>
+                  <td className="py-2 text-muted">{n.actionCorrective || "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </GlassCard>
+      )}
+    </>
+  );
+}
+
+function Kpi({ label, value, tone }: { label: string; value: string | number; tone?: "warning" | "danger" }) {
+  const color = tone === "danger" ? "text-danger" : tone === "warning" ? "text-warning" : "text-ink";
+  return (
+    <div className="rounded-xl bg-bg p-3">
+      <p className="text-[11px] text-muted">{label}</p>
+      <p className={`mt-1 text-lg font-bold tabular-nums ${color}`}>{value}</p>
     </div>
   );
 }

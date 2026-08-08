@@ -117,7 +117,8 @@ export async function recomputeReport(report: IReport): Promise<IReport> {
     hygienistName: agentNameById.get(f.createdByAgentId.toString()) ?? "—",
   }));
 
-  const tendance = await computeTendance(report.clientId.toString(), report.siteId.toString(), report.period.to);
+  // siteId est toujours défini pour un rapport STANDARD (seul type traité par cette fonction).
+  const tendance = await computeTendance(report.clientId.toString(), report.siteId!.toString(), report.period.to);
 
   const dernierMois = tendance.months.at(-1);
   const conclusion = computeConclusion(dernierMois);

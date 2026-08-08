@@ -5,18 +5,22 @@ import { Client } from "../models/Client";
 import { Site } from "../models/Site";
 import { ensureBucket, minioClient } from "../config/minio";
 import { env } from "../config/env";
-
-const BRAND = "#F26A21";
-const INK = "#0F172A";
-const MUTED = "#64748B";
+import { BRAND, INK, MUTED, addWatermark, drawInfoRow, drawLetterhead, drawTable, formatDate, sectionTitle } from "./pdfHelpers";
+import { generateMagasinsReportPdf } from "./reportMagasinsPdf.service";
+import { ReportType } from "../types/enums";
 
 /**
- * Rendu PDF du rapport (§8) : page de garde, tendance 12 mois (mini-
+ * Rendu PDF du rapport standard (§8) : page de garde, tendance 12 mois (mini-
  * histogramme dessiné directement avec les primitives PDFKit — pas de
  * dépendance à un service externe type QuickChart), tableaux d'intervention,
  * conclusion. Filigrane "SMHIT" sur chaque page comme sur le modèle papier.
+ * Délègue à `generateMagasinsReportPdf` pour les rapports multi-sites.
  */
 export async function generateReportPdf(report: IReport): Promise<Buffer> {
+  if (report.type === ReportType.MAGASINS) {
+    return generateMagasinsReportPdf(report);
+  }
+
   const [client, site] = await Promise.all([Client.findById(report.clientId), Site.findById(report.siteId)]);
 
   const doc = new PDFDocument({ size: "A4", margin: 50 });
@@ -24,29 +28,9 @@ export async function generateReportPdf(report: IReport): Promise<Buffer> {
   doc.on("data", (chunk) => chunks.push(chunk));
   const done = new Promise<Buffer>((resolve) => doc.on("end", () => resolve(Buffer.concat(chunks))));
 
-  const addWatermark = () => {
-    // `lineBreak: false` et pas de `width`/`align` : avec un `.rotate()`
-    // actif, le calcul de mise en page multi-ligne de PDFKit se trompe sur
-    // la hauteur restante de page et déclenche des `addPage()` en cascade
-    // (repéré via un rapport de test à 23 pages pour une seule fiche).
-    doc.save();
-    doc.rotate(-35, { origin: [297, 420] });
-    doc.fillColor(BRAND, 0.06).fontSize(90).text("SMHIT", 80, 380, { lineBreak: false });
-    doc.restore();
-  };
-
   // --- Page de garde ---
-  addWatermark();
-  doc.fillColor(BRAND).fontSize(28).font("Helvetica-Bold").text("SMHIT", 50, 60);
-  doc
-    .fillColor(MUTED)
-    .fontSize(9)
-    .font("Helvetica-Bold")
-    .text("Société de Maintenance et Hygiène Industrielle Tunisienne", 50, 92)
-    .font("Helvetica")
-    .text("Société Agréée Par Le Ministère De L'Environnement — Société Agréée Par Le Ministère De La Santé Publique")
-    .text("M.F: 020715RAM000 — Zone Artisanale Bouargoub 8040")
-    .text("Certifiée ISO 9001 V2015 (n°01 100 2215618) & ISO 14001 V2015 (n°01 104 2215618)");
+  addWatermark(doc);
+  drawLetterhead(doc);
 
   doc.moveDown(3);
   doc.fillColor(INK).fontSize(20).font("Helvetica-Bold").text("Rapport d'intervention", { align: "center" });
@@ -85,7 +69,7 @@ export async function generateReportPdf(report: IReport): Promise<Buffer> {
   // --- Section I : Dératisation ---
   if (derat?.interventions?.length) {
     doc.addPage();
-    addWatermark();
+    addWatermark(doc);
     sectionTitle(doc, "I. Traitement de dératisation");
     doc
       .fontSize(9)
@@ -161,7 +145,7 @@ export async function generateReportPdf(report: IReport): Promise<Buffer> {
   // --- Tendance 12 mois ---
   if (derat?.tendance?.months?.length) {
     doc.addPage();
-    addWatermark();
+    addWatermark(doc);
     sectionTitle(doc, "Analyse de tendance (12 mois)");
     doc
       .fontSize(8)
@@ -216,7 +200,7 @@ export async function generateReportPdf(report: IReport): Promise<Buffer> {
 
   if (desinsect) {
     doc.addPage();
-    addWatermark();
+    addWatermark(doc);
     sectionTitle(doc, "II. Traitement de désinsectisation");
     doc
       .fontSize(9)
@@ -289,46 +273,6 @@ export async function streamReportPdf(key: string) {
   return minioClient.getObject(env.MINIO_BUCKET, key);
 }
 
-/* ------------------------------------------------------------------ */
-/* Helpers de dessin                                                    */
-/* ------------------------------------------------------------------ */
-
-function drawInfoRow(doc: PDFKit.PDFDocument, label: string, value: string) {
-  doc.fontSize(10).font("Helvetica-Bold").fillColor(MUTED).text(`${label} : `, { continued: true });
-  doc.font("Helvetica").fillColor(INK).text(value);
-}
-
-function sectionTitle(doc: PDFKit.PDFDocument, title: string) {
-  doc.fontSize(15).font("Helvetica-Bold").fillColor(BRAND).text(title);
-  doc.moveDown(0.5);
-  doc.fillColor(INK);
-}
-
-function drawTable(doc: PDFKit.PDFDocument, headers: string[], rows: Array<Array<string | number>>) {
-  const startX = doc.x;
-  const colWidth = (doc.page.width - doc.page.margins.left - doc.page.margins.right) / headers.length;
-
-  doc.fontSize(8).font("Helvetica-Bold").fillColor("#FFFFFF");
-  let y = doc.y;
-  doc.rect(startX, y, colWidth * headers.length, 16).fill(INK);
-  doc.fillColor("#FFFFFF");
-  headers.forEach((h, i) => doc.text(String(h), startX + i * colWidth + 4, y + 4, { width: colWidth - 8 }));
-
-  y += 16;
-  doc.font("Helvetica").fillColor(INK);
-  rows.forEach((row, rowIndex) => {
-    const rowHeight = 16;
-    if (rowIndex % 2 === 0) {
-      doc.rect(startX, y, colWidth * headers.length, rowHeight).fill("#F8FAFC");
-      doc.fillColor(INK);
-    }
-    row.forEach((cell, i) => doc.text(String(cell), startX + i * colWidth + 4, y + 4, { width: colWidth - 8 }));
-    y += rowHeight;
-  });
-
-  doc.y = y + 8;
-}
-
 /** Mini-histogramme + courbe de tendance dessinés à la main (pas de lib externe). */
 function drawTrendChart(doc: PDFKit.PDFDocument, months: Array<{ month: string; appatsConsommes: number }>) {
   const chartWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
@@ -352,8 +296,4 @@ function drawTrendChart(doc: PDFKit.PDFDocument, months: Array<{ month: string; 
 
   doc.y = startY + chartHeight + 10;
   doc.fillColor(INK);
-}
-
-function formatDate(d: Date): string {
-  return new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" });
 }

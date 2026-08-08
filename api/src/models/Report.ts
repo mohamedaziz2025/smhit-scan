@@ -1,14 +1,16 @@
 import { Schema, model, type Document, type Types } from "mongoose";
-import { PeriodType, ReportStatus } from "../types/enums";
+import { PeriodType, ReportStatus, ReportType } from "../types/enums";
 
 export interface IReport extends Document {
   ficheIds: Types.ObjectId[];
   clientId: Types.ObjectId;
-  siteId: Types.ObjectId;
+  siteId?: Types.ObjectId; // absent pour un rapport MAGASINS (multi-sites)
+  type: ReportType;
   period: { type: PeriodType; from: Date; to: Date; label: string };
   status: ReportStatus;
   deratisation?: unknown;
   desinsectisation?: unknown;
+  magasins?: unknown; // agrégat multi-sites (§ Rapport Spécifique des magasins)
   adminRecommendations?: string;
   adminEdits?: Record<string, unknown>;
   pdfUrl?: string;
@@ -33,14 +35,16 @@ const reportSchema = new Schema<IReport>(
   {
     ficheIds: [{ type: Schema.Types.ObjectId, ref: "Fiche", required: true }],
     clientId: { type: Schema.Types.ObjectId, ref: "Client", required: true },
-    siteId: { type: Schema.Types.ObjectId, ref: "Site", required: true },
+    siteId: { type: Schema.Types.ObjectId, ref: "Site" },
+    type: { type: String, enum: Object.values(ReportType), default: ReportType.STANDARD },
     period: { type: periodSchema, required: true },
     status: { type: String, enum: Object.values(ReportStatus), default: ReportStatus.PENDING_ADMIN },
 
     // Données calculées (§8), stockées pour audit — schéma libre car dérivé,
-    // recalculable via POST /reports/generate.
+    // recalculable via POST /reports/generate ou /reports/magasins/generate.
     deratisation: { type: Schema.Types.Mixed },
     desinsectisation: { type: Schema.Types.Mixed },
+    magasins: { type: Schema.Types.Mixed },
 
     adminRecommendations: { type: String, trim: true },
     adminEdits: { type: Schema.Types.Mixed },

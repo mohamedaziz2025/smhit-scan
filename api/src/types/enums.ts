@@ -39,6 +39,18 @@ export enum FicheType {
   DESINSECTISATION = "DESINSECTISATION",
 }
 
+/**
+ * Type de rapport :
+ * - STANDARD : un client+site, détail par zone/poste (`Rapport_standard`)
+ * - MAGASINS : un client multi-sites ("locaux"/magasins), agrégat par local
+ *   avec KPIs, taux de disparition/endommagement/couverture/consommation
+ *   (`Rapport Spécifique des magasins`)
+ */
+export enum ReportType {
+  STANDARD = "STANDARD",
+  MAGASINS = "MAGASINS",
+}
+
 /** Granularité des périodes d'analyse — §6.5 / §10. */
 export enum PeriodType {
   DAY = "DAY",

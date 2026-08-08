@@ -1,13 +1,20 @@
 "use client";
 
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { MapPin, FileText, FileCheck2 } from "lucide-react";
+import { MapPin, FileText, FileCheck2, Store } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
+import { GradientButton } from "@/components/ui/GradientButton";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { useClient, useSites } from "@/hooks/useClients";
 import { useFiches } from "@/hooks/useFiches";
-import { useReports } from "@/hooks/useReports";
+import { useReports, useGenerateMagasinsReport } from "@/hooks/useReports";
+
+const MOIS_FR = [
+  "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
+  "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre",
+];
 
 export default function ClientDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -17,6 +24,16 @@ export default function ClientDetailPage() {
   const sites = useSites(id);
   const fiches = useFiches({ clientId: id });
   const reports = useReports({ clientId: id });
+  const generateMagasins = useGenerateMagasinsReport();
+
+  const now = new Date();
+  const [month, setMonth] = useState(now.getMonth() + 1);
+  const [year, setYear] = useState(now.getFullYear());
+
+  async function handleGenerateMagasins() {
+    const report = await generateMagasins.mutateAsync({ clientId: id, month, year });
+    router.push(`/reports/${report._id}`);
+  }
 
   return (
     <div className="space-y-8">
@@ -63,9 +80,39 @@ export default function ClientDetailPage() {
       </div>
 
       <GlassCard>
-        <h2 className="mb-3 flex items-center gap-2 font-heading text-base font-semibold text-ink">
-          <FileCheck2 size={16} className="text-brand" /> Rapports
-        </h2>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="flex items-center gap-2 font-heading text-base font-semibold text-ink">
+            <FileCheck2 size={16} className="text-brand" /> Rapports
+          </h2>
+          {(sites.data?.length ?? 0) > 1 && (
+            <div className="flex items-center gap-2">
+              <select
+                value={month}
+                onChange={(e) => setMonth(Number(e.target.value))}
+                className="h-9 rounded-lg border border-border bg-bg px-2 text-xs outline-none focus:border-brand"
+              >
+                {MOIS_FR.map((m, i) => (
+                  <option key={m} value={i + 1}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="number"
+                value={year}
+                onChange={(e) => setYear(Number(e.target.value))}
+                className="h-9 w-20 rounded-lg border border-border bg-bg px-2 text-xs outline-none focus:border-brand"
+              />
+              <GradientButton
+                onClick={handleGenerateMagasins}
+                disabled={generateMagasins.isPending}
+                className="h-9 px-3 text-xs"
+              >
+                <Store size={14} /> {generateMagasins.isPending ? "Génération…" : "Rapport Magasins"}
+              </GradientButton>
+            </div>
+          )}
+        </div>
         <div className="divide-y divide-border">
           {reports.data?.items.map((r) => (
             <Link

@@ -59,7 +59,14 @@ export default function ReportsPage() {
                   <FileCheck2 size={18} />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-ink">{r.period.label}</p>
+                  <p className="text-sm font-medium text-ink">
+                    {r.period.label}
+                    {r.type === "MAGASINS" && (
+                      <span className="ml-2 rounded-full bg-brand-light px-2 py-0.5 text-[10px] font-medium text-brand-600">
+                        Magasins
+                      </span>
+                    )}
+                  </p>
                   <p className="text-xs text-muted">
                     {clients.data?.find((c) => c._id === r.clientId)?.name ?? r.clientId}
                   </p>

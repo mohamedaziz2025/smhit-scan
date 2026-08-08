@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { Report } from "../models/Report";
-import { UserRole, ReportStatus } from "../types/enums";
+import { UserRole, ReportStatus, ReportType } from "../types/enums";
 import { requireAuth, requireRole } from "../middlewares/auth";
 import { asyncHandler } from "../utils/asyncHandler";
 import { ApiError } from "../middlewares/errorHandler";
@@ -8,12 +8,19 @@ import { canAccessClient } from "../utils/scope";
 import { auditFromRequest } from "../utils/audit";
 import { generateAndStoreReportPdf, streamReportPdf } from "../services/reportPdf.service";
 import { generateReportForPeriod, recomputeReport } from "../services/report.service";
+import { generateMagasinsReport, recomputeMagasinsReport } from "../services/reportMagasins.service";
 import {
+  generateMagasinsReportSchema,
   generateReportSchema,
   listReportsQuerySchema,
   patchReportSchema,
   returnReportSchema,
 } from "../validators/report.validators";
+
+/** Recalcule un rapport selon son type (STANDARD ou MAGASINS) — évite d'appeler la mauvaise formule. */
+async function recomputeAny(report: InstanceType<typeof Report>) {
+  return report.type === ReportType.MAGASINS ? recomputeMagasinsReport(report) : recomputeReport(report);
+}
 
 // Rapports — §9. Consultation/édition réservée Admin+SuperAdmin (§2 : l'agent
 // n'a pas accès aux rapports, la génération est automatique côté agent).
@@ -52,6 +59,19 @@ reportsRouter.post(
 
     const report = await generateReportForPeriod(input.clientId, input.siteId, input.month, input.year);
     await auditFromRequest(req, "REPORT_GENERATED", "Report", report.id, input);
+    res.json(report);
+  }),
+);
+
+/** Rapport Spécifique des Magasins (§ multi-sites) — agrège tous les locaux d'un client. */
+reportsRouter.post(
+  "/magasins/generate",
+  asyncHandler(async (req, res) => {
+    const input = generateMagasinsReportSchema.parse(req.body);
+    if (!(await canAccessClient(req.auth!, input.clientId))) throw new ApiError(403, "Hors de votre périmètre");
+
+    const report = await generateMagasinsReport(input.clientId, input.month, input.year);
+    await auditFromRequest(req, "REPORT_MAGASINS_GENERATED", "Report", report.id, input);
     res.json(report);
   }),
 );
@@ -129,7 +149,7 @@ reportsRouter.get(
     if (!report.pdfUrl) {
       // Régénère à la volée si le PDF n'a pas encore été produit (rapport non
       // encore validé) — pratique pour la preview avant validation admin.
-      await recomputeReport(report);
+      await recomputeAny(report);
       const pdfKey = await generateAndStoreReportPdf(report);
       report.pdfUrl = pdfKey;
       await report.save();
