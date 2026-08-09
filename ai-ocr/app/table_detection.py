@@ -42,7 +42,25 @@ def detect_table_cells(thresh: np.ndarray) -> list[Box]:
             continue
         cells.append((x, y, cw, ch))
 
-    return cells
+    # Une case cochée (carré plein) a ses propres arêtes horizontales/
+    # verticales, que la morphologie confond parfois avec des lignes de
+    # grille : ça fait apparaître 1-2 contours "fantômes" emboîtés à
+    # l'intérieur de la vraie cellule. Sans ce filtre, ces contours en trop
+    # décalent l'alignement colonne pour tout le reste de la ligne (repéré
+    # via tests/test_pipeline.py sur formulaire synthétique).
+    return _remove_nested_boxes(cells)
+
+
+def _is_strictly_nested(inner: Box, outer: Box, tolerance: int = 3) -> bool:
+    ix, iy, iw, ih = inner
+    ox, oy, ow, oh = outer
+    if iw * ih >= ow * oh:
+        return False
+    return ix >= ox - tolerance and iy >= oy - tolerance and ix + iw <= ox + ow + tolerance and iy + ih <= oy + oh + tolerance
+
+
+def _remove_nested_boxes(cells: list[Box]) -> list[Box]:
+    return [c for c in cells if not any(_is_strictly_nested(c, other) for other in cells if other != c)]
 
 
 def group_cells_into_rows(cells: list[Box], row_tolerance_ratio: float = 0.6) -> list[list[Box]]:
