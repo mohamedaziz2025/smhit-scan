@@ -112,6 +112,10 @@ export function drawFooter(doc: PDFKit.PDFDocument, pageIndex: number, pageCount
   doc.page.margins.bottom = originalBottom;
 }
 
+const CELL_PAD_X = 6;
+const CELL_PAD_Y = 5;
+const MIN_ROW_HEIGHT = 17;
+
 export function drawTable(
   doc: PDFKit.PDFDocument,
   headers: string[],
@@ -120,24 +124,49 @@ export function drawTable(
 ): void {
   const startX = doc.x;
   const totalWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
-  const widths = colWidths ?? headers.map(() => totalWidth / headers.length);
+  let widths = colWidths ?? headers.map(() => totalWidth / headers.length);
+
+  // Filet de sécurité : des largeurs explicites qui dépassent la largeur
+  // imprimable (ça arrive vite à additionner des colWidths "au pif") font
+  // déborder les colonnes de droite hors du cadre de page — on les
+  // rééchelonne proportionnellement plutôt que de laisser déborder.
+  const widthsSum = widths.reduce((a, b) => a + b, 0);
+  if (widthsSum > totalWidth) {
+    const scale = totalWidth / widthsSum;
+    widths = widths.map((w) => w * scale);
+  }
 
   const xAt = (i: number) => startX + widths.slice(0, i).reduce((a, b) => a + b, 0);
   const tableTop = doc.y;
 
-  doc.fontSize(7.5).font("Helvetica-Bold").fillColor("#FFFFFF");
-  let y = doc.y;
-  doc.rect(startX, y, totalWidth, 17).fill(BRAND);
-  doc.fillColor("#FFFFFF");
-  headers.forEach((h, i) => doc.text(String(h), xAt(i) + 6, y + 5, { width: widths[i] - 10 }));
+  // Hauteur de ligne calculée sur le texte réel (doc.heightOfString), pas une
+  // constante à une ligne : un en-tête/contenu qui passe à la ligne dans sa
+  // colonne (ex. "Endommagés" dans une colonne étroite, ou une observation
+  // longue) débordait auparavant sur la ligne suivante au lieu d'agrandir sa
+  // propre ligne.
+  const rowHeightFor = (cells: Array<string | number>, fontSize: number, bold: boolean): number => {
+    doc.fontSize(fontSize).font(bold ? "Helvetica-Bold" : "Helvetica");
+    const maxTextHeight = Math.max(
+      ...cells.map((c, i) => doc.heightOfString(String(c), { width: widths[i] - CELL_PAD_X * 2 })),
+    );
+    return Math.max(maxTextHeight + CELL_PAD_Y * 2, MIN_ROW_HEIGHT);
+  };
 
-  y += 17;
+  let y = doc.y;
+  const headerHeight = rowHeightFor(headers, 7.5, true);
+  doc.rect(startX, y, totalWidth, headerHeight).fill(BRAND);
+  doc.fillColor("#FFFFFF").fontSize(7.5).font("Helvetica-Bold");
+  headers.forEach((h, i) => doc.text(String(h), xAt(i) + CELL_PAD_X, y + CELL_PAD_Y, { width: widths[i] - CELL_PAD_X * 2 }));
+
+  y += headerHeight;
   doc.font("Helvetica").fillColor(INK);
   let segmentTop = tableTop; // haut du morceau de tableau sur la page courante (repart de 0 après un saut de page)
   rows.forEach((row, rowIndex) => {
+    const rowHeight = rowHeightFor(row, 7.5, false);
+
     // Ajoute une nouvelle page si la ligne dépasse la zone imprimable —
     // sans ça, PDFKit continue d'écrire hors-page (texte tronqué en bas).
-    if (y > doc.page.height - doc.page.margins.bottom - 20) {
+    if (y + rowHeight > doc.page.height - doc.page.margins.bottom - 5) {
       // Referme le cadre du morceau de tableau resté sur la page précédente
       // avant de tourner la page — sinon un tableau qui déborde dessinerait
       // un cadre absurde du haut de la 1ère page jusqu'au bas de la dernière.
@@ -148,12 +177,12 @@ export function drawTable(
       segmentTop = y;
     }
 
-    const rowHeight = 17;
     if (rowIndex % 2 === 0) {
       doc.rect(startX, y, totalWidth, rowHeight).fill("#FBF4EE");
       doc.fillColor(INK);
     }
-    row.forEach((cell, i) => doc.text(String(cell), xAt(i) + 6, y + 5, { width: widths[i] - 10 }));
+    doc.fontSize(7.5).font("Helvetica");
+    row.forEach((cell, i) => doc.text(String(cell), xAt(i) + CELL_PAD_X, y + CELL_PAD_Y, { width: widths[i] - CELL_PAD_X * 2 }));
     doc
       .moveTo(startX, y + rowHeight)
       .lineTo(startX + totalWidth, y + rowHeight)

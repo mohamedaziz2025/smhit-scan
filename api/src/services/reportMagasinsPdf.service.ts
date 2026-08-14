@@ -102,7 +102,11 @@ export async function generateMagasinsReportPdf(report: IReport): Promise<Buffer
         r.appatsConsommes,
         r.observation,
       ]),
-      [70, 55, 55, 50, 50, 55, 55, 60, 100],
+      // Somme = 495pt = largeur imprimable A4 (595 - 50 - 50 de marges) ;
+      // dépasser cette somme faisait déborder les dernières colonnes hors du
+      // cadre de page (drawTable() a depuis un filet de sécurité qui
+      // rééchelonne automatiquement, mais autant partir de valeurs justes).
+      [62, 48, 45, 42, 42, 48, 48, 55, 105],
     );
   } else {
     doc.fontSize(10).font("Helvetica").fillColor(MUTED).text("Aucune intervention enregistrée sur cette période.");
