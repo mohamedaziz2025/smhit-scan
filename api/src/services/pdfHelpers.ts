@@ -5,41 +5,73 @@ export const INK = "#0F172A";
 export const MUTED = "#64748B";
 
 /**
- * Filigrane "SMHIT" — voir note dans generateReportPdf sur le bug
- * rotate()+width (23 pages au lieu de ~3, fixé via lineBreak:false).
+ * Cadre décoratif + filigrane "SMHIT" — appelé sur chaque nouvelle page pour
+ * lui donner l'aspect "papier à en-tête encadré" du document réel (bordure
+ * orange fine tout autour) plutôt qu'une page blanche nue.
  *
- * `doc.save()`/`doc.restore()` ne couvrent que l'état graphique (couleur,
- * matrice de transformation…) — PAS le curseur texte (`doc.x`/`doc.y`, de
- * simples propriétés JS, hors de cette pile). Le `.text(..., {lineBreak:
- * false})` du filigrane laissait donc le curseur bloqué à (80, 380) après
- * chaque appel, décalant tout le contenu qui suit vers le milieu de la
- * page à chaque nouvelle page — d'où des rapports de 8+ pages à moitié
- * vides pour un contenu qui tient normalement sur 3. On restaure donc
- * explicitement x/y après coup.
+ * Voir note historique sur le bug rotate()+width (23 pages au lieu de ~3,
+ * fixé via lineBreak:false) : `doc.save()`/`doc.restore()` ne couvrent que
+ * l'état graphique (couleur, matrice de transformation…) — PAS le curseur
+ * texte (`doc.x`/`doc.y`, de simples propriétés JS, hors de cette pile). Le
+ * `.text(..., {lineBreak:false})` du filigrane laissait donc le curseur
+ * bloqué à (80, 380) après chaque appel, décalant tout le contenu qui suit
+ * vers le milieu de la page à chaque nouvelle page — d'où des rapports de
+ * 8+ pages à moitié vides pour un contenu qui tient normalement sur 3. On
+ * restaure donc explicitement x/y après coup.
  */
 export function addWatermark(doc: PDFKit.PDFDocument): void {
   const { x, y } = doc;
+
+  doc.save();
+  doc.lineWidth(1.2).strokeColor(BRAND, 0.55);
+  doc.roundedRect(18, 18, doc.page.width - 36, doc.page.height - 36, 6).stroke();
+  doc.restore();
+
   doc.save();
   doc.rotate(-35, { origin: [297, 420] });
-  doc.fillColor(BRAND, 0.06).fontSize(90).text("SMHIT", 80, 380, { lineBreak: false });
+  doc.fillColor(BRAND, 0.05).fontSize(90).text("SMHIT", 80, 380, { lineBreak: false });
   doc.restore();
+
   doc.x = x;
   doc.y = y;
 }
 
-/** En-tête société (§ fiche/rapport réels) — identité + agréments, texte seul (pas de logo tiers). */
+/**
+ * Emblème vectoriel (dégradé + pictogramme "bouclier") — même identité
+ * visuelle que le logo web/mobile (`SmhitLogo`), recréé ici en primitives
+ * PDFKit puisqu'aucun fichier image n'est embarqué dans l'API.
+ */
+export function drawLogoMark(doc: PDFKit.PDFDocument, x: number, y: number, size = 36): void {
+  const grad = doc.linearGradient(x, y, x + size, y + size);
+  grad.stop(0, "#FF8A3D").stop(0.5, BRAND).stop(1, "#D2551A");
+  doc.roundedRect(x, y, size, size, size * 0.28).fill(grad);
+
+  doc.save();
+  const scale = (size * 0.5) / 24;
+  doc.translate(x + size * 0.22, y + size * 0.16).scale(scale, scale);
+  doc.path("M12 2l7 3v6c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V5l7-3z").fillOpacity(0.95).fill("#FFFFFF");
+  doc.restore();
+  doc.fillOpacity(1);
+}
+
+/** En-tête société (§ fiche/rapport réels) — identité + agréments + emblème vectoriel (pas de logo tiers). */
 export function drawLetterhead(doc: PDFKit.PDFDocument): void {
-  doc.fillColor(BRAND).fontSize(28).font("Helvetica-Bold").text("SMHIT", 50, 60);
+  drawLogoMark(doc, 50, 56, 34);
+  doc.fillColor(BRAND).fontSize(24).font("Helvetica-Bold").text("SMHIT", 94, 60);
   doc
     .fillColor(MUTED)
-    .fontSize(9)
+    .fontSize(8.5)
     .font("Helvetica-Bold")
-    .text("Société de Maintenance et Hygiène Industrielle Tunisienne", 50, 92)
+    .text("Société de Maintenance et Hygiène Industrielle Tunisienne", 50, 100)
     .font("Helvetica")
     .text("Société Agréée Par Le Ministère De L'Environnement — Société Agréée Par Le Ministère De La Santé Publique")
     .text("M.F: 020715RAM000 — Zone Artisanale Bouargoub 8040")
     .text("Certifiée ISO 9001 V2015 (n°01 100 2215618) & ISO 14001 V2015 (n°01 104 2215618)");
+
+  doc.moveTo(50, 148).lineTo(doc.page.width - 50, 148).lineWidth(0.75).strokeColor(BRAND, 0.3).stroke();
   doc.fillColor(INK);
+  doc.x = 50;
+  doc.y = 158;
 }
 
 export function drawInfoRow(doc: PDFKit.PDFDocument, label: string, value: string): void {
@@ -47,10 +79,27 @@ export function drawInfoRow(doc: PDFKit.PDFDocument, label: string, value: strin
   doc.font("Helvetica").fillColor(INK).text(value);
 }
 
+/** Titre de section avec liseré coloré — hiérarchie visuelle plus nette qu'un simple texte orange. */
 export function sectionTitle(doc: PDFKit.PDFDocument, title: string): void {
-  doc.fontSize(15).font("Helvetica-Bold").fillColor(BRAND).text(title);
-  doc.moveDown(0.5);
+  const barX = doc.x;
+  const barY = doc.y;
+  doc.rect(barX, barY + 1.5, 4, 15).fill(BRAND);
+  doc.fontSize(15).font("Helvetica-Bold").fillColor(INK).text(title, barX + 12, barY);
+  doc.x = barX;
+  doc.moveDown(0.6);
   doc.fillColor(INK);
+}
+
+/** Numérotation de page centrée en pied de page — appelé après coup une fois le nombre total de pages connu. */
+export function drawFooter(doc: PDFKit.PDFDocument, pageIndex: number, pageCount: number): void {
+  const y = doc.page.height - 34;
+  doc.save();
+  doc
+    .fontSize(8)
+    .font("Helvetica")
+    .fillColor(MUTED)
+    .text(`SMHIT — Page ${pageIndex} / ${pageCount}`, 0, y, { width: doc.page.width, align: "center" });
+  doc.restore();
 }
 
 export function drawTable(
@@ -64,32 +113,50 @@ export function drawTable(
   const widths = colWidths ?? headers.map(() => totalWidth / headers.length);
 
   const xAt = (i: number) => startX + widths.slice(0, i).reduce((a, b) => a + b, 0);
+  const tableTop = doc.y;
 
   doc.fontSize(7.5).font("Helvetica-Bold").fillColor("#FFFFFF");
   let y = doc.y;
-  doc.rect(startX, y, totalWidth, 16).fill(INK);
+  doc.rect(startX, y, totalWidth, 17).fill(BRAND);
   doc.fillColor("#FFFFFF");
-  headers.forEach((h, i) => doc.text(String(h), xAt(i) + 4, y + 4, { width: widths[i] - 8 }));
+  headers.forEach((h, i) => doc.text(String(h), xAt(i) + 6, y + 5, { width: widths[i] - 10 }));
 
-  y += 16;
+  y += 17;
   doc.font("Helvetica").fillColor(INK);
+  let segmentTop = tableTop; // haut du morceau de tableau sur la page courante (repart de 0 après un saut de page)
   rows.forEach((row, rowIndex) => {
     // Ajoute une nouvelle page si la ligne dépasse la zone imprimable —
     // sans ça, PDFKit continue d'écrire hors-page (texte tronqué en bas).
     if (y > doc.page.height - doc.page.margins.bottom - 20) {
+      // Referme le cadre du morceau de tableau resté sur la page précédente
+      // avant de tourner la page — sinon un tableau qui déborde dessinerait
+      // un cadre absurde du haut de la 1ère page jusqu'au bas de la dernière.
+      doc.lineWidth(0.75).strokeColor(BRAND, 0.4).rect(startX, segmentTop, totalWidth, y - segmentTop).stroke();
       doc.addPage();
       addWatermark(doc);
       y = doc.y;
+      segmentTop = y;
     }
 
-    const rowHeight = 16;
+    const rowHeight = 17;
     if (rowIndex % 2 === 0) {
-      doc.rect(startX, y, totalWidth, rowHeight).fill("#F8FAFC");
+      doc.rect(startX, y, totalWidth, rowHeight).fill("#FBF4EE");
       doc.fillColor(INK);
     }
-    row.forEach((cell, i) => doc.text(String(cell), xAt(i) + 4, y + 4, { width: widths[i] - 8 }));
+    row.forEach((cell, i) => doc.text(String(cell), xAt(i) + 6, y + 5, { width: widths[i] - 10 }));
+    doc
+      .moveTo(startX, y + rowHeight)
+      .lineTo(startX + totalWidth, y + rowHeight)
+      .lineWidth(0.5)
+      .strokeColor("#E7EAF0")
+      .stroke();
     y += rowHeight;
   });
+
+  // Cadre fin autour du dernier morceau du tableau (en-tête + lignes de la
+  // page courante) pour un rendu moins "à plat" — dessiné en dernier pour
+  // ne pas être recouvert.
+  doc.lineWidth(0.75).strokeColor(BRAND, 0.4).rect(startX, segmentTop, totalWidth, y - segmentTop).stroke();
 
   // Même piège que addWatermark() (voir la note là-bas) : les cellules sont
   // écrites avec des .text(str, x, y, …) à position explicite, qui laissent
@@ -200,5 +267,51 @@ export function drawSignatureBlock(doc: PDFKit.PDFDocument): void {
   drawCachet(doc, cx, cy, radius);
 
   doc.y = cy + radius + 10;
+  doc.fillColor(INK);
+}
+
+export const WARNING = "#F59E0B";
+export const DANGER = "#DC2626";
+
+export interface StatCardSpec {
+  label: string;
+  value: string | number;
+  tone?: "warning" | "danger";
+}
+
+/**
+ * Grille de cartes KPI (4 par ligne) — même esprit que le composant `Kpi`
+ * du web (chiffre en avant, libellé en dessous), plutôt qu'un tableau
+ * "Indicateur | Résultat" plat pour la synthèse managériale des rapports.
+ */
+export function drawStatCards(doc: PDFKit.PDFDocument, cards: StatCardSpec[], perRow = 4): void {
+  const startX = doc.x;
+  const totalWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+  const gap = 8;
+  const cardWidth = (totalWidth - gap * (perRow - 1)) / perRow;
+  const cardHeight = 52;
+  let y = doc.y;
+
+  cards.forEach((card, i) => {
+    const col = i % perRow;
+    if (col === 0 && i > 0) y += cardHeight + gap;
+    const x = startX + col * (cardWidth + gap);
+
+    const color = card.tone === "danger" ? DANGER : card.tone === "warning" ? WARNING : INK;
+    doc.roundedRect(x, y, cardWidth, cardHeight, 6).fillAndStroke("#FBF4EE", "#F0DFD1");
+    doc
+      .fontSize(17)
+      .font("Helvetica-Bold")
+      .fillColor(color)
+      .text(String(card.value), x + 8, y + 9, { width: cardWidth - 16, lineBreak: false });
+    doc
+      .fontSize(6.7)
+      .font("Helvetica")
+      .fillColor(MUTED)
+      .text(card.label, x + 8, y + 32, { width: cardWidth - 16 });
+  });
+
+  doc.x = startX;
+  doc.y = y + cardHeight + 10;
   doc.fillColor(INK);
 }

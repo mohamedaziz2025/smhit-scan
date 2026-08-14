@@ -5,7 +5,7 @@ import { Client } from "../models/Client";
 import { Site } from "../models/Site";
 import { ensureBucket, minioClient } from "../config/minio";
 import { env } from "../config/env";
-import { BRAND, INK, MUTED, addWatermark, drawInfoRow, drawLetterhead, drawSignatureBlock, drawTable, formatDate, pdfSafeSymbol, sectionTitle } from "./pdfHelpers";
+import { BRAND, INK, MUTED, addWatermark, drawFooter, drawInfoRow, drawLetterhead, drawSignatureBlock, drawTable, formatDate, pdfSafeSymbol, sectionTitle } from "./pdfHelpers";
 import { generateMagasinsReportPdf } from "./reportMagasinsPdf.service";
 import { ReportType } from "../types/enums";
 
@@ -23,7 +23,7 @@ export async function generateReportPdf(report: IReport): Promise<Buffer> {
 
   const [client, site] = await Promise.all([Client.findById(report.clientId), Site.findById(report.siteId)]);
 
-  const doc = new PDFDocument({ size: "A4", margin: 50 });
+  const doc = new PDFDocument({ size: "A4", margin: 50, bufferPages: true });
   const chunks: Buffer[] = [];
   doc.on("data", (chunk) => chunks.push(chunk));
   const done = new Promise<Buffer>((resolve) => doc.on("end", () => resolve(Buffer.concat(chunks))));
@@ -249,6 +249,12 @@ export async function generateReportPdf(report: IReport): Promise<Buffer> {
   }
 
   drawSignatureBlock(doc);
+
+  const pageRange = doc.bufferedPageRange();
+  for (let i = pageRange.start; i < pageRange.start + pageRange.count; i++) {
+    doc.switchToPage(i);
+    drawFooter(doc, i - pageRange.start + 1, pageRange.count);
+  }
 
   doc.end();
   return done;

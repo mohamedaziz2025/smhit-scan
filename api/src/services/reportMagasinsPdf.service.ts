@@ -1,7 +1,7 @@
 import PDFDocument from "pdfkit";
 import type { IReport } from "../models/Report";
 import { Client } from "../models/Client";
-import { BRAND, INK, MUTED, addWatermark, drawLetterhead, drawSignatureBlock, drawTable, sectionTitle } from "./pdfHelpers";
+import { BRAND, INK, MUTED, addWatermark, drawFooter, drawLetterhead, drawSignatureBlock, drawStatCards, drawTable, sectionTitle } from "./pdfHelpers";
 import type { SiteRow } from "./reportMagasins.service";
 
 interface MagasinsData {
@@ -42,7 +42,7 @@ export async function generateMagasinsReportPdf(report: IReport): Promise<Buffer
   const kpis = data.kpis ?? ({} as MagasinsData["kpis"]);
   const suivi = data.suiviInterventions ?? [];
 
-  const doc = new PDFDocument({ size: "A4", margin: 50 });
+  const doc = new PDFDocument({ size: "A4", margin: 50, bufferPages: true });
   const chunks: Buffer[] = [];
   doc.on("data", (chunk) => chunks.push(chunk));
   const done = new Promise<Buffer>((resolve) => doc.on("end", () => resolve(Buffer.concat(chunks))));
@@ -61,21 +61,16 @@ export async function generateMagasinsReportPdf(report: IReport): Promise<Buffer
 
   doc.fontSize(11).font("Helvetica-Bold").text("KPI du mois");
   doc.moveDown(0.3);
-  drawTable(
-    doc,
-    ["Indicateur", "Résultat"],
-    [
-      ["Nombre de magasins suivis", `${kpis.nombreMagasinsSuivis ?? 0} / ${kpis.nombreMagasinsTotal ?? 0}`],
-      ["Interventions réalisées", kpis.interventionsRealisees ?? 0],
-      ["Taux de réalisation", `${kpis.tauxRealisation ?? 0} %`],
-      ["Nombre total de pièges", kpis.nombreTotalPieges ?? 0],
-      ["Pièges disparus", kpis.piegesDisparus ?? 0],
-      ["Pièges endommagés", kpis.piegesEndommages ?? 0],
-      ["Appâts consommés", kpis.appatsConsommes ?? 0],
-      ["Sites avec activité rongeurs", kpis.sitesAvecActivite ?? 0],
-    ],
-    [300, 200],
-  );
+  drawStatCards(doc, [
+    { label: "Magasins suivis", value: `${kpis.nombreMagasinsSuivis ?? 0}/${kpis.nombreMagasinsTotal ?? 0}` },
+    { label: "Interventions réalisées", value: kpis.interventionsRealisees ?? 0 },
+    { label: "Taux de réalisation", value: `${kpis.tauxRealisation ?? 0}%` },
+    { label: "Pièges (total)", value: kpis.nombreTotalPieges ?? 0 },
+    { label: "Pièges disparus", value: kpis.piegesDisparus ?? 0, tone: (kpis.piegesDisparus ?? 0) > 0 ? "danger" : undefined },
+    { label: "Pièges endommagés", value: kpis.piegesEndommages ?? 0, tone: (kpis.piegesEndommages ?? 0) > 0 ? "warning" : undefined },
+    { label: "Appâts consommés", value: kpis.appatsConsommes ?? 0, tone: (kpis.appatsConsommes ?? 0) > 0 ? "warning" : undefined },
+    { label: "Sites avec activité", value: kpis.sitesAvecActivite ?? 0, tone: (kpis.sitesAvecActivite ?? 0) > 0 ? "warning" : undefined },
+  ]);
 
   doc.moveDown(1);
   if (data.produitsUtilises?.length) {
@@ -188,6 +183,12 @@ export async function generateMagasinsReportPdf(report: IReport): Promise<Buffer
     .text(data.conclusion || report.adminRecommendations || "En attente des recommandations de l'administrateur.");
 
   drawSignatureBlock(doc);
+
+  const pageRange = doc.bufferedPageRange();
+  for (let i = pageRange.start; i < pageRange.start + pageRange.count; i++) {
+    doc.switchToPage(i);
+    drawFooter(doc, i - pageRange.start + 1, pageRange.count);
+  }
 
   doc.end();
   return done;
