@@ -4,12 +4,27 @@ export const BRAND = "#F26A21";
 export const INK = "#0F172A";
 export const MUTED = "#64748B";
 
-/** Filigrane "SMHIT" — voir note dans generateReportPdf sur le bug rotate()+width. */
+/**
+ * Filigrane "SMHIT" — voir note dans generateReportPdf sur le bug
+ * rotate()+width (23 pages au lieu de ~3, fixé via lineBreak:false).
+ *
+ * `doc.save()`/`doc.restore()` ne couvrent que l'état graphique (couleur,
+ * matrice de transformation…) — PAS le curseur texte (`doc.x`/`doc.y`, de
+ * simples propriétés JS, hors de cette pile). Le `.text(..., {lineBreak:
+ * false})` du filigrane laissait donc le curseur bloqué à (80, 380) après
+ * chaque appel, décalant tout le contenu qui suit vers le milieu de la
+ * page à chaque nouvelle page — d'où des rapports de 8+ pages à moitié
+ * vides pour un contenu qui tient normalement sur 3. On restaure donc
+ * explicitement x/y après coup.
+ */
 export function addWatermark(doc: PDFKit.PDFDocument): void {
+  const { x, y } = doc;
   doc.save();
   doc.rotate(-35, { origin: [297, 420] });
   doc.fillColor(BRAND, 0.06).fontSize(90).text("SMHIT", 80, 380, { lineBreak: false });
   doc.restore();
+  doc.x = x;
+  doc.y = y;
 }
 
 /** En-tête société (§ fiche/rapport réels) — identité + agréments, texte seul (pas de logo tiers). */
