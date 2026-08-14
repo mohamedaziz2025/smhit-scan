@@ -5,7 +5,7 @@ import { Client } from "../models/Client";
 import { Site } from "../models/Site";
 import { ensureBucket, minioClient } from "../config/minio";
 import { env } from "../config/env";
-import { BRAND, INK, MUTED, addWatermark, drawInfoRow, drawLetterhead, drawSignatureBlock, drawTable, formatDate, sectionTitle } from "./pdfHelpers";
+import { BRAND, INK, MUTED, addWatermark, drawInfoRow, drawLetterhead, drawSignatureBlock, drawTable, formatDate, pdfSafeSymbol, sectionTitle } from "./pdfHelpers";
 import { generateMagasinsReportPdf } from "./reportMagasinsPdf.service";
 import { ReportType } from "../types/enums";
 
@@ -153,7 +153,7 @@ export async function generateReportPdf(report: IReport): Promise<Buffer> {
       .fillColor(MUTED)
       .text(
         "Matrice de risque : Faible = 0 consommation et 0 capture · Moyen = 1 à 3 consommations d'appâts · " +
-          "Élevé = > 3 consommations et/ou ≥ 1 capture.  Tendance : ↗ augmentation · ↘ diminution · → stable.",
+          `Élevé = > 3 consommations et/ou >= 1 capture.  Tendance : ${pdfSafeSymbol("↗")} augmentation · ${pdfSafeSymbol("↘")} diminution · ${pdfSafeSymbol("→")} stable.`,
       );
     doc.fillColor(INK);
     doc.moveDown(0.5);
@@ -163,7 +163,7 @@ export async function generateReportPdf(report: IReport): Promise<Buffer> {
     drawTable(
       doc,
       ["Mois", "Appâts consommés", "Cadavres", "Tendance", "Risque"],
-      derat.tendance.months.map((m) => [m.month, m.appatsConsommes, m.cadavres, m.tendance, m.risque]),
+      derat.tendance.months.map((m) => [m.month, m.appatsConsommes, m.cadavres, pdfSafeSymbol(m.tendance), m.risque]),
     );
   }
 
@@ -174,7 +174,7 @@ export async function generateReportPdf(report: IReport): Promise<Buffer> {
     doc.fontSize(10).font("Helvetica").fillColor(INK).text(derat.conclusion.interpretation);
     doc.moveDown(0.3);
     doc.font("Helvetica-Bold").text(`Risque actuel : `, { continued: true }).font("Helvetica").text(derat.conclusion.risqueActuel);
-    doc.font("Helvetica-Bold").text(`Évolution : `, { continued: true }).font("Helvetica").text(derat.conclusion.evolution);
+    doc.font("Helvetica-Bold").text(`Évolution : `, { continued: true }).font("Helvetica").text(pdfSafeSymbol(derat.conclusion.evolution));
     doc.moveDown(0.3);
     doc.font("Helvetica-Bold").text("Action recommandée :");
     doc.font("Helvetica").text(derat.conclusion.actionRecommandee);

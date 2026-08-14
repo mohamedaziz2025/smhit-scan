@@ -105,6 +105,20 @@ export function formatDate(d: Date): string {
   return new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
+const PDF_SAFE_SYMBOLS: Record<string, string> = { "↗": "^", "↘": "v", "→": "-" };
+
+/**
+ * Les flèches de tendance (↗↘→, voir computeTrendSymbol) s'affichent
+ * correctement dans l'API/le web (fonts système Unicode), mais Helvetica —
+ * la seule police standard PDF utilisée ici, pas de fichier de police
+ * embarqué — ne couvre que WinAnsiEncoding et rend ces caractères comme des
+ * glyphes de substitution illisibles. Substitution ASCII uniquement pour
+ * l'affichage PDF ; la donnée elle-même (JSON, web) garde le vrai symbole.
+ */
+export function pdfSafeSymbol(symbol: string): string {
+  return PDF_SAFE_SYMBOLS[symbol] ?? symbol;
+}
+
 /**
  * Place un caractère sur un arc de cercle (PDFKit n'a pas de "text on path"
  * natif) : translation au point de l'arc puis rotation tangentielle avant
