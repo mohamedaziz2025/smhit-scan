@@ -57,28 +57,30 @@ export default function AdminUsersPage() {
         {users.isLoading ? (
           <p className="p-6 text-sm text-muted">Chargement…</p>
         ) : (
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-border text-xs text-muted">
-                <th className="px-6 py-3">Nom</th>
-                <th className="px-6 py-3">Email</th>
-                <th className="px-6 py-3">Rôle</th>
-                <th className="px-6 py-3">Statut</th>
-                <th className="px-6 py-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.data?.map((u) => (
-                <UserRow
-                  key={u._id}
-                  user={u}
-                  onRoleChange={(role) => updateRole.mutate({ id: u._id, role })}
-                  onToggleActive={() => toggleActive.mutate({ id: u._id, isActive: !u.isActive })}
-                  onDelete={() => deleteUser.mutate(u._id)}
-                />
-              ))}
-            </tbody>
-          </table>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[640px] text-left text-sm">
+              <thead>
+                <tr className="border-b border-border text-xs text-muted">
+                  <th className="px-4 py-3 md:px-6">Nom</th>
+                  <th className="px-4 py-3 md:px-6">Email</th>
+                  <th className="px-4 py-3 md:px-6">Rôle</th>
+                  <th className="px-4 py-3 md:px-6">Statut</th>
+                  <th className="px-4 py-3 text-right md:px-6">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.data?.map((u) => (
+                  <UserRow
+                    key={u._id}
+                    user={u}
+                    onRoleChange={(role) => updateRole.mutate({ id: u._id, role })}
+                    onToggleActive={() => toggleActive.mutate({ id: u._id, isActive: !u.isActive })}
+                    onDelete={() => deleteUser.mutate(u._id)}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </GlassCard>
 

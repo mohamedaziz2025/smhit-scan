@@ -81,30 +81,32 @@ export default function AnalyticsPage() {
           </GlassCard>
 
           <GlassCard className="p-0">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="border-b border-border text-xs text-muted">
-                  <th className="px-6 py-3">Mois</th>
-                  <th className="px-6 py-3">Appâts consommés</th>
-                  <th className="px-6 py-3">Cadavres</th>
-                  <th className="px-6 py-3">Tendance</th>
-                  <th className="px-6 py-3">Risque</th>
-                </tr>
-              </thead>
-              <tbody>
-                {months.map((m, i) => (
-                  <tr key={i} className="border-b border-border last:border-0">
-                    <td className="px-6 py-2.5 text-ink">{m.month}</td>
-                    <td className="px-6 py-2.5 text-muted">{m.appatsConsommes}</td>
-                    <td className="px-6 py-2.5 text-muted">{m.cadavres}</td>
-                    <td className="px-6 py-2.5 text-muted">{m.tendance}</td>
-                    <td className="px-6 py-2.5">
-                      <StatusBadge status={m.risque} />
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[560px] text-left text-sm">
+                <thead>
+                  <tr className="border-b border-border text-xs text-muted">
+                    <th className="px-4 py-3 md:px-6">Mois</th>
+                    <th className="px-4 py-3 md:px-6">Appâts consommés</th>
+                    <th className="px-4 py-3 md:px-6">Cadavres</th>
+                    <th className="px-4 py-3 md:px-6">Tendance</th>
+                    <th className="px-4 py-3 md:px-6">Risque</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {months.map((m, i) => (
+                    <tr key={i} className="border-b border-border last:border-0">
+                      <td className="px-4 py-2.5 text-ink md:px-6">{m.month}</td>
+                      <td className="px-4 py-2.5 text-muted md:px-6">{m.appatsConsommes}</td>
+                      <td className="px-4 py-2.5 text-muted md:px-6">{m.cadavres}</td>
+                      <td className="px-4 py-2.5 text-muted md:px-6">{m.tendance}</td>
+                      <td className="px-4 py-2.5 md:px-6">
+                        <StatusBadge status={m.risque} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </GlassCard>
         </>
       )}

@@ -135,37 +135,39 @@ export default function AdminProductsPage() {
         {products.isLoading ? (
           <p className="p-6 text-sm text-muted">Chargement…</p>
         ) : (
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-border text-xs text-muted">
-                <th className="px-6 py-3">Code</th>
-                <th className="px-6 py-3">Nom</th>
-                <th className="px-6 py-3">Catégorie</th>
-                <th className="px-6 py-3">Matière active</th>
-                <th className="px-6 py-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {products.data?.map((p) => (
-                <tr key={p._id} className="border-b border-border last:border-0">
-                  <td className="px-6 py-2.5 font-mono text-xs text-ink">{p.code}</td>
-                  <td className="px-6 py-2.5 text-ink">{p.name}</td>
-                  <td className="px-6 py-2.5 text-muted">{p.category}</td>
-                  <td className="px-6 py-2.5 text-muted">{p.activeSubstance ?? "—"}</td>
-                  <td className="px-6 py-2.5">
-                    <div className="flex justify-end gap-2">
-                      <button onClick={() => openEdit(p)} className="rounded-lg p-2 text-muted hover:bg-bg hover:text-ink">
-                        <Pencil size={15} />
-                      </button>
-                      <button onClick={() => deactivate.mutate(p._id)} className="rounded-lg p-2 text-muted hover:bg-bg hover:text-danger">
-                        <Trash2 size={15} />
-                      </button>
-                    </div>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[640px] text-left text-sm">
+              <thead>
+                <tr className="border-b border-border text-xs text-muted">
+                  <th className="px-4 py-3 md:px-6">Code</th>
+                  <th className="px-4 py-3 md:px-6">Nom</th>
+                  <th className="px-4 py-3 md:px-6">Catégorie</th>
+                  <th className="px-4 py-3 md:px-6">Matière active</th>
+                  <th className="px-4 py-3 text-right md:px-6">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {products.data?.map((p) => (
+                  <tr key={p._id} className="border-b border-border last:border-0">
+                    <td className="px-4 py-2.5 font-mono text-xs text-ink md:px-6">{p.code}</td>
+                    <td className="px-4 py-2.5 text-ink md:px-6">{p.name}</td>
+                    <td className="px-4 py-2.5 text-muted md:px-6">{p.category}</td>
+                    <td className="px-4 py-2.5 text-muted md:px-6">{p.activeSubstance ?? "—"}</td>
+                    <td className="px-4 py-2.5 md:px-6">
+                      <div className="flex justify-end gap-2">
+                        <button onClick={() => openEdit(p)} className="rounded-lg p-2 text-muted hover:bg-bg hover:text-ink">
+                          <Pencil size={15} />
+                        </button>
+                        <button onClick={() => deactivate.mutate(p._id)} className="rounded-lg p-2 text-muted hover:bg-bg hover:text-danger">
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </GlassCard>
 

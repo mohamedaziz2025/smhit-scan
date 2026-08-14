@@ -102,28 +102,30 @@ export default function ReportDetailPage() {
           </h2>
 
           {intervention.zonesExternes.length > 0 && (
-            <table className="mb-4 w-full text-left text-sm">
-              <thead>
-                <tr className="text-xs text-muted">
-                  <th className="pb-2">Zone</th>
-                  <th className="pb-2">Postes</th>
-                  <th className="pb-2">Prises</th>
-                  <th className="pb-2">% Prise</th>
-                  <th className="pb-2">Cadavres</th>
-                </tr>
-              </thead>
-              <tbody>
-                {intervention.zonesExternes.map((z, i) => (
-                  <tr key={i} className="border-t border-border">
-                    <td className="py-2 text-ink">{z.zone}</td>
-                    <td className="py-2 text-muted">{z.nbPiege}</td>
-                    <td className="py-2 text-muted">{z.nbPrise}</td>
-                    <td className="py-2 text-muted">{z.pctPrise}%</td>
-                    <td className="py-2 text-muted">{z.nbCadavre}</td>
+            <div className="mb-4 overflow-x-auto">
+              <table className="w-full min-w-[480px] text-left text-sm">
+                <thead>
+                  <tr className="text-xs text-muted">
+                    <th className="pb-2">Zone</th>
+                    <th className="pb-2">Postes</th>
+                    <th className="pb-2">Prises</th>
+                    <th className="pb-2">% Prise</th>
+                    <th className="pb-2">Cadavres</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {intervention.zonesExternes.map((z, i) => (
+                    <tr key={i} className="border-t border-border">
+                      <td className="py-2 text-ink">{z.zone}</td>
+                      <td className="py-2 text-muted">{z.nbPiege}</td>
+                      <td className="py-2 text-muted">{z.nbPrise}</td>
+                      <td className="py-2 text-muted">{z.pctPrise}%</td>
+                      <td className="py-2 text-muted">{z.nbCadavre}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
 
           {[...intervention.commentairesExternes, ...intervention.commentairesInternes].map((c, i) => (
@@ -192,24 +194,26 @@ function MagasinsSections({ magasins }: { magasins: NonNullable<ReportDto["magas
       {produitsUtilises.length > 0 && (
         <GlassCard>
           <h2 className="mb-3 font-heading text-base font-semibold text-ink">Produits utilisés</h2>
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="text-xs text-muted">
-                <th className="pb-2">Type</th>
-                <th className="pb-2">Produit</th>
-                <th className="pb-2">Matière active</th>
-              </tr>
-            </thead>
-            <tbody>
-              {produitsUtilises.map((p, i) => (
-                <tr key={i} className="border-t border-border">
-                  <td className="py-2 text-ink">{p.type}</td>
-                  <td className="py-2 text-ink">{p.produit}</td>
-                  <td className="py-2 text-muted">{p.activeSubstance}</td>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[420px] text-left text-sm">
+              <thead>
+                <tr className="text-xs text-muted">
+                  <th className="pb-2">Type</th>
+                  <th className="pb-2">Produit</th>
+                  <th className="pb-2">Matière active</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {produitsUtilises.map((p, i) => (
+                  <tr key={i} className="border-t border-border">
+                    <td className="py-2 text-ink">{p.type}</td>
+                    <td className="py-2 text-ink">{p.produit}</td>
+                    <td className="py-2 text-muted">{p.activeSubstance}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </GlassCard>
       )}
 
@@ -252,7 +256,8 @@ function MagasinsSections({ magasins }: { magasins: NonNullable<ReportDto["magas
       {nonConformites.length > 0 && (
         <GlassCard>
           <h2 className="mb-3 font-heading text-base font-semibold text-ink">Non-conformités et plan d&apos;actions</h2>
-          <table className="w-full text-left text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[480px] text-left text-sm">
             <thead>
               <tr className="text-xs text-muted">
                 <th className="pb-2 pr-3">Magasin</th>
@@ -270,6 +275,7 @@ function MagasinsSections({ magasins }: { magasins: NonNullable<ReportDto["magas
               ))}
             </tbody>
           </table>
+          </div>
         </GlassCard>
       )}
     </>
