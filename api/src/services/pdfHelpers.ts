@@ -91,6 +91,13 @@ export function drawTable(
     y += rowHeight;
   });
 
+  // Même piège que addWatermark() (voir la note là-bas) : les cellules sont
+  // écrites avec des .text(str, x, y, …) à position explicite, qui laissent
+  // le curseur PDFKit collé au x de la DERNIÈRE cellule (colonne la plus à
+  // droite) plutôt que de le rendre au point de départ du tableau. Sans ce
+  // reset, tout ce qui suit en positionnement relatif (titre de section,
+  // tableau suivant…) démarre décalé vers la droite — voire hors-page.
+  doc.x = startX;
   doc.y = y + 8;
 }
 

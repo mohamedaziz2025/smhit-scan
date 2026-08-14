@@ -296,6 +296,12 @@ function drawTrendChart(doc: PDFKit.PDFDocument, months: Array<{ month: string; 
       .text(m.month.slice(0, 3), x, startY + chartHeight - 14, { width: barWidth, align: "center" });
   });
 
+  // Comme addWatermark() (voir pdfHelpers.ts) : les appels .text(str, x, y, …)
+  // à position explicite déplacent le curseur PDFKit vers la position du
+  // dernier caractère dessiné (ici, le label du dernier mois, proche du bord
+  // droit) au lieu de le laisser inchangé. Sans ce reset, drawTable() juste
+  // après hérite d'un doc.x collé à droite et dessine ses colonnes hors-page.
+  doc.x = startX;
   doc.y = startY + chartHeight + 10;
   doc.fillColor(INK);
 }
