@@ -2,9 +2,11 @@ import { Router } from "express";
 import { Product } from "../models/Product";
 import { UserRole } from "../types/enums";
 import { requireAuth, requireRole } from "../middlewares/auth";
+import { uploadProductsExcel } from "../middlewares/upload";
 import { asyncHandler } from "../utils/asyncHandler";
 import { ApiError } from "../middlewares/errorHandler";
 import { auditFromRequest } from "../utils/audit";
+import { importProductsFromExcel } from "../services/productImport.service";
 import { createProductSchema, updateProductSchema } from "../validators/product.validators";
 
 export const productsRouter = Router();
@@ -67,6 +69,21 @@ productsRouter.post(
     const product = await Product.create({ ...input, code: input.code.toUpperCase() });
     await auditFromRequest(req, "PRODUCT_CREATED", "Product", product.id, input);
     res.status(201).json(product);
+  }),
+);
+
+/** Import Excel du catalogue (§9) — SuperAdmin uniquement (§2, gestion catalogue produits). */
+productsRouter.post(
+  "/import",
+  requireRole(UserRole.SUPER_ADMIN),
+  uploadProductsExcel,
+  asyncHandler(async (req, res) => {
+    const file = req.file as Express.Multer.File | undefined;
+    if (!file) throw new ApiError(400, "Fichier requis (champ 'file')");
+
+    const summary = await importProductsFromExcel(file.buffer);
+    await auditFromRequest(req, "PRODUCTS_IMPORTED", "Product", "bulk", summary);
+    res.json(summary);
   }),
 );
 

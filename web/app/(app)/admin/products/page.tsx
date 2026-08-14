@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { PackagePlus, Trash2, Pencil } from "lucide-react";
+import { useRef, useState } from "react";
+import { PackagePlus, Trash2, Pencil, FileSpreadsheet } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { GradientButton } from "@/components/ui/GradientButton";
 import { Modal } from "@/components/ui/Modal";
@@ -10,6 +10,7 @@ import {
   useCreateProduct,
   useUpdateProduct,
   useDeactivateProduct,
+  useImportProducts,
   type ProductDto,
 } from "@/hooks/useProducts";
 
@@ -24,11 +25,32 @@ export default function AdminProductsPage() {
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct();
   const deactivate = useDeactivateProduct();
+  const importProducts = useImportProducts();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<ProductDto | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState<string | null>(null);
+  const [importResult, setImportResult] = useState<string | null>(null);
+
+  async function handleImportFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // permet de réimporter le même fichier après correction
+    if (!file) return;
+    setImportResult(null);
+    try {
+      const summary = await importProducts.mutateAsync(file);
+      setImportResult(
+        `${summary.created} créé(s), ${summary.updated} mis à jour${
+          summary.errors.length ? `, ${summary.errors.length} ligne(s) ignorée(s)` : ""
+        } sur ${summary.total}.`,
+      );
+    } catch (err) {
+      const message = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+      setImportResult(message ?? "Échec de l'import.");
+    }
+  }
 
   function openCreate() {
     setEditing(null);
@@ -69,10 +91,24 @@ export default function AdminProductsPage() {
           <h1 className="font-heading text-2xl font-bold text-ink">Catalogue produits</h1>
           <p className="mt-1 text-sm text-muted">{products.data?.length ?? 0} références actives.</p>
         </div>
-        <GradientButton onClick={openCreate}>
-          <PackagePlus size={16} /> Nouveau produit
-        </GradientButton>
+        <div className="flex gap-3">
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={importProducts.isPending}
+            className="inline-flex h-11 items-center gap-2 rounded-xl border border-border bg-surface px-4 text-sm font-medium text-ink hover:bg-bg disabled:opacity-50"
+          >
+            <FileSpreadsheet size={16} /> {importProducts.isPending ? "Import…" : "Importer Excel"}
+          </button>
+          <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" hidden onChange={handleImportFile} />
+          <GradientButton onClick={openCreate}>
+            <PackagePlus size={16} /> Nouveau produit
+          </GradientButton>
+        </div>
       </div>
+
+      {importResult && (
+        <p className="rounded-xl bg-brand-light px-4 py-2.5 text-sm text-brand-600">{importResult}</p>
+      )}
 
       <div className="flex gap-3">
         <input

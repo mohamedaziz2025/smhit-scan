@@ -15,3 +15,23 @@ export const uploadScanImages = multer({
     cb(null, true);
   },
 }).array("images", 10);
+
+const ALLOWED_EXCEL_MIME = new Set([
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", // .xlsx
+  "application/vnd.ms-excel", // .xls
+  "text/csv",
+  "application/octet-stream", // certains navigateurs n'envoient pas de MIME fiable pour .xlsx
+]);
+
+/** Import catalogue produits (§9 `POST /products/import`) — un seul fichier Excel/CSV. */
+export const uploadProductsExcel = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (!ALLOWED_EXCEL_MIME.has(file.mimetype) && !/\.(xlsx|xls|csv)$/i.test(file.originalname)) {
+      cb(new ApiError(400, `Fichier non reconnu comme Excel/CSV : ${file.originalname}`));
+      return;
+    }
+    cb(null, true);
+  },
+}).single("file");

@@ -83,9 +83,13 @@ export function useCreateFicheScan() {
       form.append("ficheType", input.ficheType);
       input.files.forEach((f) => form.append("images", f));
 
-      const { data } = await api.post("/fiches/scan", form, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      // Ne PAS fixer Content-Type ici : un FormData a besoin d'un boundary
+      // généré par le navigateur au moment de l'envoi ("multipart/form-data;
+      // boundary=..."). En l'écrasant par la chaîne littérale (sans
+      // boundary), le corps multipart devient illisible côté serveur
+      // (multer échoue à parser clientId/siteId/images) — Axios met le bon
+      // header automatiquement dès qu'on le laisse faire.
+      const { data } = await api.post("/fiches/scan", form);
       return data as FicheDto;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["fiches"] }),

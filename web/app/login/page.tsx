@@ -87,10 +87,6 @@ export default function LoginPage() {
             )}
           </GradientButton>
         </form>
-
-        <p className="mt-6 text-center text-[11px] text-muted">
-          {process.env.NEXT_PUBLIC_API_URL}
-        </p>
       </GlassCard>
     </div>
   );
