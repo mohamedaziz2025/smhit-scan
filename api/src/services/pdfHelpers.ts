@@ -92,13 +92,19 @@ export function sectionTitle(doc: PDFKit.PDFDocument, title: string): void {
 
 /** Numérotation de page centrée en pied de page — appelé après coup une fois le nombre total de pages connu. */
 export function drawFooter(doc: PDFKit.PDFDocument, pageIndex: number, pageCount: number): void {
+  // lineBreak:false est indispensable ici, pas juste stylistique : sans lui,
+  // PDFKit voit un texte positionné sous la marge basse et déclenche SA
+  // PROPRE pagination automatique — même en lui donnant x/y explicites —
+  // créant une page fantôme blanche par appel (12 pages livrées pour un
+  // rapport de 6, chaque page originale suivie d'une page ne contenant que
+  // son numéro). Même piège que le filigrane, cf. addWatermark() plus haut.
   const y = doc.page.height - 34;
   doc.save();
   doc
     .fontSize(8)
     .font("Helvetica")
     .fillColor(MUTED)
-    .text(`SMHIT — Page ${pageIndex} / ${pageCount}`, 0, y, { width: doc.page.width, align: "center" });
+    .text(`SMHIT — Page ${pageIndex} / ${pageCount}`, 0, y, { width: doc.page.width, align: "center", lineBreak: false });
   doc.restore();
 }
 
