@@ -36,7 +36,16 @@ reportsRouter.get(
     if (query.status) filter.status = query.status;
     if (query.period) filter["period.type"] = query.period;
     if (query.from || query.to) {
-      filter["period.from"] = { ...(query.from ? { $gte: query.from } : {}), ...(query.to ? { $lte: query.to } : {}) };
+      // Chevauchement d'intervalle (pas juste "period.from dans la plage") :
+      // un rapport mensuel a period.from figé au 1er du mois, donc un filtre
+      // "Jour"/"Semaine" ne remonterait quasiment jamais rien avec un simple
+      // $gte/$lte sur period.from. On veut plutôt "la période demandée
+      // recoupe la période couverte par le rapport" : period.from <= to ET
+      // period.to >= from.
+      const overlap: Record<string, unknown>[] = [];
+      if (query.to) overlap.push({ "period.from": { $lte: query.to } });
+      if (query.from) overlap.push({ "period.to": { $gte: query.from } });
+      if (overlap.length > 0) filter.$and = overlap;
     }
 
     const [items, total] = await Promise.all([

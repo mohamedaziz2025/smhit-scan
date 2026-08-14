@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { MapPin, FileText, FileCheck2, Store, Plus, Pencil } from "lucide-react";
@@ -8,6 +8,7 @@ import { GlassCard } from "@/components/ui/GlassCard";
 import { GradientButton } from "@/components/ui/GradientButton";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { SitePlanEditor } from "@/components/SitePlanEditor";
+import { PeriodFilter, computeRange, type PeriodPreset } from "@/components/PeriodFilter";
 import { useClient, useSites, useCreateSite, useUpdateSite, type SiteDto } from "@/hooks/useClients";
 import { useFiches } from "@/hooks/useFiches";
 import { useReports, useGenerateMagasinsReport } from "@/hooks/useReports";
@@ -24,8 +25,20 @@ export default function ClientDetailPage() {
 
   const client = useClient(id);
   const sites = useSites(id);
-  const fiches = useFiches({ clientId: id });
-  const reports = useReports({ clientId: id });
+
+  const [periodPreset, setPeriodPreset] = useState<PeriodPreset>("all");
+  const [periodFrom, setPeriodFrom] = useState<string | undefined>();
+  const [periodTo, setPeriodTo] = useState<string | undefined>();
+  const period = useMemo(() => computeRange(periodPreset, periodFrom, periodTo), [periodPreset, periodFrom, periodTo]);
+
+  function handlePeriodChange(p: PeriodPreset, from?: string, to?: string) {
+    setPeriodPreset(p);
+    setPeriodFrom(from);
+    setPeriodTo(to);
+  }
+
+  const fiches = useFiches({ clientId: id, from: period.from, to: period.to });
+  const reports = useReports({ clientId: id, from: period.from, to: period.to });
   const generateMagasins = useGenerateMagasinsReport();
   const createSite = useCreateSite(id);
   const updateSite = useUpdateSite(id);
@@ -68,6 +81,8 @@ export default function ClientDetailPage() {
           saving={createSite.isPending || updateSite.isPending}
         />
       )}
+
+      <PeriodFilter value={periodPreset} onChange={handlePeriodChange} />
 
       <div className="grid gap-6 lg:grid-cols-3">
         <GlassCard>

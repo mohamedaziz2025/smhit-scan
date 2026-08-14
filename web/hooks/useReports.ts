@@ -58,7 +58,7 @@ export interface ReportDto {
   };
 }
 
-export function useReports(params: { clientId?: string; status?: string } = {}) {
+export function useReports(params: { clientId?: string; status?: string; from?: string; to?: string } = {}) {
   return useQuery({
     queryKey: ["reports", params],
     queryFn: async () => {

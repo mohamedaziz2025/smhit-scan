@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { FileCheck2 } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { PeriodFilter, computeRange, type PeriodPreset } from "@/components/PeriodFilter";
 import { useReports } from "@/hooks/useReports";
 import { useClients } from "@/hooks/useClients";
 
@@ -18,8 +19,19 @@ const STATUS_TABS = [
 
 export default function ReportsPage() {
   const [status, setStatus] = useState<string | undefined>(undefined);
-  const reports = useReports({ status });
+  const [preset, setPreset] = useState<PeriodPreset>("all");
+  const [customFrom, setCustomFrom] = useState<string | undefined>();
+  const [customTo, setCustomTo] = useState<string | undefined>();
+
+  const range = useMemo(() => computeRange(preset, customFrom, customTo), [preset, customFrom, customTo]);
+  const reports = useReports({ status, from: range.from, to: range.to });
   const clients = useClients();
+
+  function handlePeriodChange(p: PeriodPreset, from?: string, to?: string) {
+    setPreset(p);
+    setCustomFrom(from);
+    setCustomTo(to);
+  }
 
   return (
     <div className="space-y-6">
@@ -42,11 +54,15 @@ export default function ReportsPage() {
         ))}
       </div>
 
+      <PeriodFilter value={preset} onChange={handlePeriodChange} />
+
       <GlassCard className="p-0">
         {reports.isLoading ? (
           <p className="p-6 text-sm text-muted">Chargement…</p>
         ) : reports.data?.items.length === 0 ? (
-          <p className="p-6 text-sm text-muted">Aucun rapport.</p>
+          <p className="p-6 text-sm text-muted">
+            {preset === "all" ? "Aucun rapport." : "Aucun rapport sur cette période."}
+          </p>
         ) : (
           <div className="divide-y divide-border">
             {reports.data?.items.map((r) => (
