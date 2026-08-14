@@ -58,7 +58,14 @@ clientsRouter.get(
   asyncHandler(async (req, res) => {
     const client = await Client.findById(req.params.id);
     if (!client) throw new ApiError(404, "Client introuvable");
-    if (!(await canAccessClient(req.auth!, client.id))) throw new ApiError(403, "Hors de votre périmètre");
+    // AGENT : lecture ouverte (cf. commentaire en tête de fichier — doit pouvoir
+    // choisir n'importe quel client au moment du scan) ; canAccessClient renvoie
+    // toujours false pour ce rôle car son périmètre réel se contrôle via
+    // createdByAgentId, pas via le scope client — donc on le bypass ici comme
+    // dans POST /fiches/scan.
+    if (req.auth!.role !== UserRole.AGENT && !(await canAccessClient(req.auth!, client.id))) {
+      throw new ApiError(403, "Hors de votre périmètre");
+    }
     res.json(client);
   }),
 );
@@ -93,7 +100,9 @@ clientsRouter.delete(
 clientsRouter.get(
   "/:clientId/sites",
   asyncHandler(async (req, res) => {
-    if (!(await canAccessClient(req.auth!, req.params.clientId))) {
+    // AGENT : même bypass que ci-dessus — c'est justement la route que le
+    // scan web/mobile appelle pour peupler le sélecteur de site.
+    if (req.auth!.role !== UserRole.AGENT && !(await canAccessClient(req.auth!, req.params.clientId))) {
       throw new ApiError(403, "Hors de votre périmètre");
     }
     const sites = await Site.find({ clientId: req.params.clientId, isActive: true }).sort({ name: 1 });
