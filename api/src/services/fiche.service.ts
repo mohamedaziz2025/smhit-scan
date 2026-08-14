@@ -67,16 +67,16 @@ export async function createFicheFromScan(input: ScanInput): Promise<IFiche> {
       initZonesFromSitePlan(fiche, input.ficheType, site.zonesConfig);
     }
 
-    // Extraction IA (§7) — pré-remplit la fiche. Le pipeline complet arrive
-    // au Module 3 ; en attendant, l'appel renvoie un contrat vide (confiance
-    // 0). Contrairement à l'upload, une IA indisponible n'est pas
-    // bloquante : l'agent saisira la fiche manuellement.
+    // Extraction IA (§7) — pré-remplit la fiche. L'appel réel est branché
+    // sur le microservice ai-ocr (pipeline OpenCV complet, Module 3). Une
+    // IA indisponible ou en échec n'est pas bloquante : l'agent saisira/
+    // corrigera la fiche manuellement.
     try {
       if (input.files.length > 0) {
         const imageBase64 = input.files[0].buffer.toString("base64");
         const extraction = await extractFiche(input.ficheType, imageBase64);
         fiche.ocrConfidence = extraction.overall_confidence;
-        applyExtractionToFiche(fiche, input.ficheType, extraction);
+        applyExtractionToFiche(fiche, input.ficheType, extraction, site?.zonesConfig);
       }
     } catch (err) {
       console.error("⚠️  Extraction IA/OCR indisponible :", (err as Error).message);
@@ -136,18 +136,75 @@ function initZonesFromSitePlan(
   }
 }
 
+interface OcrZone {
+  zoneLabel: string;
+  postes: unknown[];
+}
+
+/**
+ * Le pipeline OCR ne détecte actuellement qu'une seule zone par image (§
+ * "Simplification MVP" documentée dans ai-ocr/app/pipeline.py) alors que la
+ * fiche papier réelle a très souvent plusieurs zones dans un même tableau
+ * (ex. vérifié le 14/08/2026 sur une vraie fiche scannée : "Zone N°1" 5
+ * postes + "Zone N°2" 12 postes, dans une seule photo) — l'IA renvoie donc
+ * tous les postes détectés dans une seule zone mal étiquetée "Zone N°1".
+ *
+ * Quand le site a un plan de zones configuré (§6.2, initZonesFromSitePlan
+ * ci-dessus), on redécoupe la liste plate de postes détectés selon les
+ * comptes de postes attendus par zone, dans l'ordre — bien plus fiable que
+ * de tenter de deviner en pixels les limites des cellules "Zone" fusionnées
+ * sur plusieurs lignes du tableau papier. Sans plan configuré, on ne peut
+ * pas savoir où une zone s'arrête et l'autre commence : on renvoie les
+ * zones OCR telles quelles (l'agent réattribue manuellement si besoin).
+ */
+function remapZonesUsingSitePlan(ocrZones: OcrZone[], planZones: ZoneConfig[]): OcrZone[] {
+  if (planZones.length <= 1) return ocrZones;
+
+  const flatPostes = ocrZones.flatMap((z) => z.postes);
+  if (flatPostes.length === 0) return ocrZones;
+
+  const result: OcrZone[] = [];
+  let cursor = 0;
+  for (const zoneConfig of planZones) {
+    const postes = flatPostes.slice(cursor, cursor + zoneConfig.postCount).map((p, i) => ({
+      ...(p as Record<string, unknown>),
+      posteNo: i + 1,
+    }));
+    result.push({ zoneLabel: zoneConfig.label, postes });
+    cursor += zoneConfig.postCount;
+  }
+
+  // Postes détectés en trop par rapport au plan (OCR imparfait, ou plan
+  // désynchronisé du terrain) : conservés dans une zone à part plutôt que
+  // silencieusement perdus — l'agent les voit et les réattribue à la main.
+  if (cursor < flatPostes.length) {
+    result.push({ zoneLabel: "Postes non attribués (à vérifier)", postes: flatPostes.slice(cursor) });
+  }
+
+  return result;
+}
+
 function applyExtractionToFiche(
   fiche: IFiche,
   ficheType: FicheType,
   extraction: { sections: Record<string, unknown> },
+  siteZonesConfig?: { externalZones: ZoneConfig[]; internalZones: ZoneConfig[] },
 ): void {
-  const section = extraction.sections as Record<string, { zones?: unknown[] } | undefined>;
+  const section = extraction.sections as Record<string, { zones?: OcrZone[] } | undefined>;
 
   if (ficheType === FicheType.DERATISATION_EXTERNE && section.deratExterne) {
-    fiche.deratExterne = { zones: section.deratExterne.zones ?? [] };
+    let zones = section.deratExterne.zones ?? [];
+    if (siteZonesConfig?.externalZones?.length) {
+      zones = remapZonesUsingSitePlan(zones, siteZonesConfig.externalZones);
+    }
+    fiche.deratExterne = { zones };
   }
   if (ficheType === FicheType.DERATISATION_INTERNE && section.deratInterne) {
-    fiche.deratInterne = { zones: section.deratInterne.zones ?? [] };
+    let zones = section.deratInterne.zones ?? [];
+    if (siteZonesConfig?.internalZones?.length) {
+      zones = remapZonesUsingSitePlan(zones, siteZonesConfig.internalZones);
+    }
+    fiche.deratInterne = { zones };
   }
   if (ficheType === FicheType.DESINSECTISATION && section.desinsectisation) {
     const desinsect = section.desinsectisation as { lignes?: unknown[] };
