@@ -1,7 +1,7 @@
 import PDFDocument from "pdfkit";
 import type { IReport } from "../models/Report";
 import { Client } from "../models/Client";
-import { BRAND, INK, MUTED, addWatermark, drawLetterhead, drawTable, sectionTitle } from "./pdfHelpers";
+import { BRAND, INK, MUTED, addWatermark, drawLetterhead, drawSignatureBlock, drawTable, sectionTitle } from "./pdfHelpers";
 import type { SiteRow } from "./reportMagasins.service";
 
 interface MagasinsData {
@@ -186,6 +186,8 @@ export async function generateMagasinsReportPdf(report: IReport): Promise<Buffer
     .font("Helvetica")
     .fillColor(INK)
     .text(data.conclusion || report.adminRecommendations || "En attente des recommandations de l'administrateur.");
+
+  drawSignatureBlock(doc);
 
   doc.end();
   return done;

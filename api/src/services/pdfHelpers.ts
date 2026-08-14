@@ -82,3 +82,87 @@ export function drawTable(
 export function formatDate(d: Date): string {
   return new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
+
+/**
+ * Place un caractère sur un arc de cercle (PDFKit n'a pas de "text on path"
+ * natif) : translation au point de l'arc puis rotation tangentielle avant
+ * de dessiner le caractère à l'origine locale.
+ */
+function drawArcText(
+  doc: PDFKit.PDFDocument,
+  text: string,
+  cx: number,
+  cy: number,
+  radius: number,
+  startDeg: number,
+  endDeg: number,
+  fontSize: number,
+  flip: boolean,
+): void {
+  doc.font("Helvetica-Bold").fontSize(fontSize).fillColor(BRAND);
+  const step = (endDeg - startDeg) / Math.max(text.length - 1, 1);
+  for (let i = 0; i < text.length; i++) {
+    const deg = startDeg + step * i;
+    const rad = (deg * Math.PI) / 180;
+    const x = cx + radius * Math.sin(rad);
+    const y = cy - radius * Math.cos(rad);
+    doc.save();
+    doc.translate(x, y);
+    // Sur l'arc du bas, le texte serait dessiné tête en bas sans le +180° —
+    // "flip" corrige l'orientation pour qu'il reste lisible normalement.
+    doc.rotate(flip ? deg + 180 : deg, { origin: [0, 0] });
+    doc.text(text[i], -3, -3, { lineBreak: false });
+    doc.restore();
+  }
+}
+
+/**
+ * Cachet SMHIT — cercle vectoriel (pas d'image externe à charger) : texte
+ * courbé en haut/bas + identité au centre. Placé en bas des rapports
+ * générés (§ signature), comme le cachet humide sur le document papier.
+ */
+export function drawCachet(doc: PDFKit.PDFDocument, cx: number, cy: number, radius = 46): void {
+  doc.save();
+  doc.lineWidth(1.4).strokeColor(BRAND);
+  doc.circle(cx, cy, radius).stroke();
+  doc.lineWidth(0.6);
+  doc.circle(cx, cy, radius - 7).stroke();
+  doc.restore();
+
+  drawArcText(doc, "STE MAINTENANCE HYGIENE INDUSTRIELLE", cx, cy, radius - 15, -100, 100, 6, false);
+  drawArcText(doc, "BOUARGOUB - TUNISIE", cx, cy, radius - 15, 235, 125, 6.5, true);
+
+  doc.fillColor(BRAND).font("Helvetica-Bold").fontSize(13).text("SMHIT", cx - 25, cy - 7, { width: 50, align: "center", lineBreak: false });
+  doc.fillColor(MUTED).font("Helvetica").fontSize(5).text("Agréée Min. Santé", cx - 30, cy + 7, { width: 60, align: "center", lineBreak: false });
+  doc.fillColor(INK);
+}
+
+/**
+ * Bloc "Cachet & Signature SMHIT" à placer en fin de rapport (§ validation) —
+ * ajoute une nouvelle page si la place manque plutôt que de couper le cachet
+ * en bas de page.
+ */
+export function drawSignatureBlock(doc: PDFKit.PDFDocument): void {
+  const radius = 42;
+  const blockHeight = 20 + radius * 2 + 10;
+  if (doc.y + blockHeight > doc.page.height - doc.page.margins.bottom) {
+    doc.addPage();
+    addWatermark(doc);
+  }
+
+  doc.moveDown(1.5);
+  const rightEdge = doc.page.width - doc.page.margins.right;
+  const labelY = doc.y;
+  doc
+    .fontSize(9)
+    .font("Helvetica-Bold")
+    .fillColor(MUTED)
+    .text("Cachet & Signature SMHIT", rightEdge - 160, labelY, { width: 160, align: "right" });
+
+  const cx = rightEdge - radius;
+  const cy = labelY + 18 + radius;
+  drawCachet(doc, cx, cy, radius);
+
+  doc.y = cy + radius + 10;
+  doc.fillColor(INK);
+}

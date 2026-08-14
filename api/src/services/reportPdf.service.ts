@@ -5,7 +5,7 @@ import { Client } from "../models/Client";
 import { Site } from "../models/Site";
 import { ensureBucket, minioClient } from "../config/minio";
 import { env } from "../config/env";
-import { BRAND, INK, MUTED, addWatermark, drawInfoRow, drawLetterhead, drawTable, formatDate, sectionTitle } from "./pdfHelpers";
+import { BRAND, INK, MUTED, addWatermark, drawInfoRow, drawLetterhead, drawSignatureBlock, drawTable, formatDate, sectionTitle } from "./pdfHelpers";
 import { generateMagasinsReportPdf } from "./reportMagasinsPdf.service";
 import { ReportType } from "../types/enums";
 
@@ -247,6 +247,8 @@ export async function generateReportPdf(report: IReport): Promise<Buffer> {
     sectionTitle(doc, "Recommandations Admin");
     doc.fontSize(10).font("Helvetica").fillColor(INK).text(report.adminRecommendations);
   }
+
+  drawSignatureBlock(doc);
 
   doc.end();
   return done;
