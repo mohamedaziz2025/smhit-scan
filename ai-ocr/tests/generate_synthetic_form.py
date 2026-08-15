@@ -42,7 +42,16 @@ def build_synthetic_form(
         x = margin + c * cell_w
         draw.line([(x, margin), (x, height - margin)], fill=0, width=2)
 
-    # Cellules cochées (une croix/case pleine, comme une coche manuscrite dense)
+    # Cellules cochées (une croix/case pleine, comme une coche manuscrite dense).
+    # Essayé un inset plus petit (carré plus grand) le 15/08/2026 pour
+    # rendre le cas moins limite — ça a cassé la détection de grille
+    # elle-même : un carré trop proche du bord de cellule se fait confondre
+    # avec un trait de grille par la morphologie (même famille de problème
+    # que _remove_nested_boxes dans table_detection.py). Revenu à l'inset
+    # d'origine ; la vraie correction du cas limite est côté
+    # slice_cells_by_layout (léger retrait des cellules découpées, pour se
+    # comporter comme les cellules issues de contours de detect_table_cells
+    # plutôt que de coller exactement aux traits de grille).
     for row, col in checked_cells:
         actual_row = row + 1  # +1 pour sauter la ligne d'en-tête
         x0 = margin + col * cell_w + 15

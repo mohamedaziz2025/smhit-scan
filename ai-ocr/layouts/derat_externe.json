@@ -1,6 +1,6 @@
 {
   "fiche_type": "DERATISATION_EXTERNE",
-  "layout_version": "v01",
+  "layout_version": "v02",
   "description": "Template de layout pour la fiche dératisation zones externes — décrit les colonnes attendues du tableau papier pour le mapping cellule -> champ (§7.2).",
   "header_fields": [
     { "key": "client_name", "label": "Client" },
@@ -8,20 +8,24 @@
     { "key": "date", "label": "Date" }
   ],
   "row_unit": "poste",
+  "_comment_zone_column": "Colonne 'Zone' (fusionnée sur plusieurs lignes du tableau papier, ex. 'Zone N°1 : clôture externe' sur 5 lignes) — non lisible ligne par ligne, sautée via zone_column_ratio ; la répartition en zones se fait côté API à partir du plan de site (§6.2, fiche.service.ts remapZonesUsingSitePlan).",
+  "zone_column_ratio": 0.215,
+  "_comment_width_ratio": "Proportions mesurées le 15/08/2026 sur une vraie fiche papier SMHIT scannée (gabarit imprimé fixe, identique pour tous les clients) — utilisées par l'approche de découpage par mise en page fixe (table_detection.slice_cells_by_layout) plutôt que la détection ligne par ligne. Somme non-Zone ≈ 0.785 ; le code normalise automatiquement, un léger écart n'est pas bloquant.",
   "columns": [
-    { "key": "posteNo", "label": "N° Poste", "type": "number" },
-    { "key": "etatAppat.intact", "label": "Intact", "type": "checkbox" },
-    { "key": "etatAppat.appatAltere", "label": "Appât altéré", "type": "checkbox" },
-    { "key": "etatAppat.presenceCadavres", "label": "Présence cadavres", "type": "checkbox" },
-    { "key": "etatAppat.consomme", "label": "Consommé", "type": "checkbox" },
-    { "key": "etatAppat.disparu", "label": "Disparu", "type": "checkbox" },
-    { "key": "action.remplace", "label": "Remplacé", "type": "checkbox" },
-    { "key": "produit.refCode_raw", "label": "Réf. produit", "type": "text" },
-    { "key": "produit.numLot", "label": "N° Lot", "type": "text" },
-    { "key": "etatPorteAppat.inaccessible", "label": "Inaccessible", "type": "checkbox" },
-    { "key": "etatPorteAppat.disparu", "label": "Disparu", "type": "checkbox" },
-    { "key": "etatPorteAppat.malFixe", "label": "Mal fixé", "type": "checkbox" },
-    { "key": "etatPorteAppat.casse", "label": "Cassé", "type": "checkbox" }
+    { "key": "posteNo", "label": "N° Poste", "type": "number", "width_ratio": 0.041 },
+    { "key": "etatAppat.intact", "label": "Intact", "type": "checkbox", "width_ratio": 0.045 },
+    { "key": "etatAppat.appatAltere", "label": "Appât altéré", "type": "checkbox", "width_ratio": 0.054 },
+    { "key": "etatAppat.presenceCadavres", "label": "Présence cadavres", "type": "checkbox", "width_ratio": 0.054 },
+    { "key": "etatAppat.consomme", "label": "Consommé", "type": "checkbox", "width_ratio": 0.054 },
+    { "key": "etatAppat.disparu", "label": "Disparu", "type": "checkbox", "width_ratio": 0.054 },
+    { "key": "action.remplace", "label": "Remplacé", "type": "checkbox", "width_ratio": 0.045 },
+    { "key": "produit.name", "label": "Nom Commercial", "type": "text", "width_ratio": 0.089 },
+    { "key": "produit.refCode_raw", "label": "Code Produit", "type": "text", "width_ratio": 0.081 },
+    { "key": "produit.numLot", "label": "N° Lot", "type": "text", "width_ratio": 0.045 },
+    { "key": "etatPorteAppat.inaccessible", "label": "Inaccessible", "type": "checkbox", "width_ratio": 0.054 },
+    { "key": "etatPorteAppat.disparu", "label": "Disparu", "type": "checkbox", "width_ratio": 0.045 },
+    { "key": "etatPorteAppat.malFixe", "label": "Mal fixé", "type": "checkbox", "width_ratio": 0.054 },
+    { "key": "etatPorteAppat.casse", "label": "Cassé", "type": "checkbox", "width_ratio": 0.073 }
   ],
   "checkbox_pixel_density_threshold": 0.35
 }

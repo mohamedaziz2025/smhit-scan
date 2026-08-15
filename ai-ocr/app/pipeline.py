@@ -1,18 +1,23 @@
 """Orchestration du pipeline complet d'extraction — §7.2 / §7.3.
 
-Limite connue (transparence) : faute de scans papier réels au moment du
-développement, ce pipeline est validé sur une image de formulaire
-synthétique générée (voir `tests/generate_synthetic_form.py` et
-`tests/test_pipeline.py`) qui reproduit une grille de cellules avec cases
-cochées. Les seuils (densité de case, tolérance de regroupement de lignes)
-sont donc calibrés sur ce cas contrôlé et devront être réajustés une fois
-testés sur de vrais scans/photos de terrain — d'où leur exposition en
-paramètres (`checkbox_pixel_density_threshold` par layout, cf. §7.4 seuils
-paramétrables par Super Admin).
+Deux stratégies de découpage du tableau (voir table_detection.py) :
 
-Simplification MVP : une seule zone par image (pas de détection de
-plusieurs tableaux dans une même page) ; la 1ère ligne détectée est
-supposée être l'en-tête de colonnes et est ignorée.
+- Mise en page fixe (15/08/2026) — quand le layout JSON définit
+  `zone_column_ratio` + un `width_ratio` par colonne (cas de
+  derat_externe.json, calibré sur une vraie fiche papier scannée) : ne
+  détecte que le contour du tableau + les séparateurs de ligne
+  (horizontaux, fiables), découpe les colonnes mathématiquement. Élimine
+  le point de rupture trouvé en testant une vraie photo de terrain (la
+  détection ligne par ligne des traits verticaux, ci-dessous, est fragile
+  face au bruit/micro-coupures d'une photo à main levée).
+- Générique par grille complète (`detect_table_cells`) — repli pour les
+  fiche_type dont le layout ne définit pas encore ces proportions.
+
+Simplification restante : une seule zone par image (le layout papier a
+plusieurs zones fusionnées sur des lignes du même tableau, ex. "Zone N°1"
+5 postes + "Zone N°2" 12 postes) — la répartition se fait côté API à
+partir du plan de site (§6.2, fiche.service.ts remapZonesUsingSitePlan),
+pas ici.
 """
 
 from __future__ import annotations
@@ -27,7 +32,14 @@ from .matching import match_product
 from .ocr_text import ocr_cell_text
 from .preprocessing import adaptive_threshold, decode_base64_image, preprocess
 from .schemas import ProductCatalogItem
-from .table_detection import detect_table_cells, group_cells_into_rows
+from .table_detection import (
+    detect_horizontal_lines,
+    detect_row_boundaries,
+    detect_table_bounds,
+    detect_table_cells,
+    group_cells_into_rows,
+    slice_cells_by_layout,
+)
 
 _LAYOUT_FILES = {
     "DERATISATION_EXTERNE": "derat_externe.json",
@@ -56,6 +68,28 @@ def _set_nested(target: dict, dotted_key: str, value: Any) -> None:
     cur[parts[-1]] = value
 
 
+def _rows_by_fixed_layout(thresh, layout: dict) -> list[list[tuple[int, int, int, int]]] | None:
+    """Stratégie par mise en page fixe — voir docstring du module. Renvoie
+    None si le layout ne définit pas encore les proportions nécessaires
+    (repli sur la détection générique) ou si aucun tableau n'est trouvé."""
+    zone_ratio = layout.get("zone_column_ratio")
+    columns = layout["columns"]
+    if zone_ratio is None or any("width_ratio" not in c for c in columns):
+        return None
+
+    horizontal_lines = detect_horizontal_lines(thresh)
+    table_box = detect_table_bounds(horizontal_lines)
+    if table_box is None:
+        return None
+
+    row_boundaries = detect_row_boundaries(horizontal_lines, table_box)
+    if len(row_boundaries) < 2:
+        return None
+
+    width_ratios = [c["width_ratio"] for c in columns]
+    return slice_cells_by_layout(table_box, row_boundaries, width_ratios, leading_offset_ratio=zone_ratio)
+
+
 def run_pipeline(fiche_type: str, image_base64: str, product_catalog: list[dict]) -> dict:
     layout = _load_layout(fiche_type)
     density_threshold = layout.get("checkbox_pixel_density_threshold", 0.35)
@@ -66,7 +100,9 @@ def run_pipeline(fiche_type: str, image_base64: str, product_catalog: list[dict]
     gray = preprocess(image)
     thresh = adaptive_threshold(gray)
 
-    rows = group_cells_into_rows(detect_table_cells(thresh))
+    rows = _rows_by_fixed_layout(thresh, layout)
+    if rows is None:
+        rows = group_cells_into_rows(detect_table_cells(thresh))
     data_rows = rows[1:] if len(rows) > 1 else rows  # 1ère ligne = en-tête présumé
 
     entries: list[dict] = []
