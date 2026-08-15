@@ -39,7 +39,32 @@ def decode_base64_image(image_base64: str) -> np.ndarray:
     except Exception as err:  # image corrompue, format non supporté par PIL, etc.
         raise ValueError("Image illisible (base64 invalide ou format non supporté)") from err
 
-    return cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
+    image = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
+    return _downscale_if_needed(image)
+
+
+# Bug de performance réel trouvé le 15/08/2026 en testant le scan avec une
+# vraie photo de terrain (4032x3024, 12+ Mpx — taille par défaut d'un
+# téléphone moderne) : preprocess() ci-dessous (cv2.fastNlMeansDenoising) a
+# mis plus de 10 minutes à traiter cette seule image, largement au-delà du
+# timeout API (voir ocr.service.ts) — le pipeline "réussissait" silencieusement
+# en timeout, la fiche gardait le plan de site vierge sans aucune donnée OCR.
+# 1500px de plus grand côté ramène cette même image à ~24s (mesuré) tout en
+# gardant une détection de grille/cases comparable ; au-delà (testé jusqu'à
+# 2400px), le temps grimpe fortement sans gain de précision mesurable sur
+# cette fiche. Downscale immédiatement après décodage, avant tout traitement
+# coûteux.
+_MAX_DIMENSION = 1500
+
+
+def _downscale_if_needed(image: np.ndarray, max_dimension: int = _MAX_DIMENSION) -> np.ndarray:
+    h, w = image.shape[:2]
+    longest_side = max(h, w)
+    if longest_side <= max_dimension:
+        return image
+    scale = max_dimension / longest_side
+    new_size = (round(w * scale), round(h * scale))
+    return cv2.resize(image, new_size, interpolation=cv2.INTER_AREA)
 
 
 def deskew(gray: np.ndarray) -> np.ndarray:
