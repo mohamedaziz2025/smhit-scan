@@ -147,6 +147,24 @@ def run_pipeline(fiche_type: str, image_base64: str, product_catalog: list[dict]
 
         if "posteNo" not in entry:
             entry["posteNo"] = row_index + 1
+
+        # Bug réel trouvé le 15/08/2026 en examinant la fiche papier
+        # "Désinsectisation" (formulaire à plusieurs lignes vierges
+        # imprimées, souvent partiellement remplies) : son champ
+        # "zoneTraitee" est `required` dans le schéma Mongoose (Fiche.ts).
+        # Une ligne du tableau sans texte dans sa 1ère colonne — cellule
+        # vierge sur le papier, ou lecture OCR ratée — produisait quand
+        # même une entrée avec zoneTraitee="", qui faisait échouer
+        # fiche.save() à la validation Mongoose et annulait TOUTE la
+        # création de fiche (aucun brouillon, même pas pour les lignes
+        # correctement lues). On ignore une ligne dont la colonne
+        # "identifiante" (1ère colonne du layout) est vide plutôt que de
+        # la transmettre telle quelle — cohérent avec "ligne trop
+        # fragmentée" ci-dessus.
+        first_col_key = columns[0]["key"] if columns else None
+        if first_col_key and not str(entry.get(first_col_key, "")).strip():
+            continue
+
         entries.append(entry)
 
     overall_confidence = round(sum(confidences) / len(confidences), 2) if confidences else 0.0

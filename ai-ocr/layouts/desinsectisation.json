@@ -1,6 +1,6 @@
 {
   "fiche_type": "DESINSECTISATION",
-  "layout_version": "v01",
+  "layout_version": "v02",
   "description": "Template de layout pour la fiche désinsectisation — §7.2.",
   "header_fields": [
     { "key": "client_name", "label": "Client" },
@@ -8,13 +8,17 @@
     { "key": "date", "label": "Date" }
   ],
   "row_unit": "ligne",
+  "_comment_zone_column": "Contrairement aux fiches dératisation (colonne 'Zone' fusionnée sur plusieurs lignes), ici 'Zone traitée' est une vraie colonne par ligne — pas de décalage à sauter.",
+  "zone_column_ratio": 0.0,
+  "_comment_width_ratio": "Proportions mesurées le 15/08/2026 sur le vrai formulaire papier SMHIT scanné (gabarit imprimé fixe) — activent le découpage par mise en page fixe (table_detection.slice_cells_by_layout) plutôt que la détection ligne par ligne fragile.",
   "columns": [
-    { "key": "zoneTraitee", "label": "Zone traitée", "type": "text" },
-    { "key": "produit.refCode_raw", "label": "Réf. produit", "type": "text" },
-    { "key": "produit.concentration", "label": "Concentration", "type": "text" },
-    { "key": "produit.numLot", "label": "N° Lot", "type": "text" },
-    { "key": "produit.dlc", "label": "DLC", "type": "text" },
-    { "key": "observations", "label": "Observations", "type": "text" }
+    { "key": "zoneTraitee", "label": "Zone traitée", "type": "text", "width_ratio": 0.262 },
+    { "key": "produit.name", "label": "Désignation Produit", "type": "text", "width_ratio": 0.085 },
+    { "key": "produit.refCode_raw", "label": "Code Produit", "type": "text", "width_ratio": 0.077 },
+    { "key": "produit.concentration", "label": "Concentration", "type": "text", "width_ratio": 0.092 },
+    { "key": "produit.numLot", "label": "N° lot", "type": "text", "width_ratio": 0.054 },
+    { "key": "produit.dlc", "label": "DLC", "type": "text", "width_ratio": 0.038 },
+    { "key": "observations", "label": "Observations", "type": "text", "width_ratio": 0.392 }
   ],
   "signature_fields": [
     { "key": "signatures.agent", "label": "Agent" },
