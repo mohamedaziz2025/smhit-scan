@@ -1,6 +1,6 @@
 {
   "fiche_type": "DERATISATION_INTERNE",
-  "layout_version": "v01",
+  "layout_version": "v02",
   "description": "Template de layout pour la fiche dératisation zones internes (plaques à colle) — §7.2.",
   "header_fields": [
     { "key": "client_name", "label": "Client" },
@@ -8,19 +8,23 @@
     { "key": "date", "label": "Date" }
   ],
   "row_unit": "poste",
+  "_comment_zone_column": "Colonne 'Zone' fusionnée sur plusieurs lignes (ex. 'Zone N°1 : Atelier production' sur 5 lignes) — non lisible ligne par ligne, sautée via zone_column_ratio ; la répartition en zones se fait côté API à partir du plan de site (§6.2, fiche.service.ts remapZonesUsingSitePlan).",
+  "zone_column_ratio": 0.215,
+  "_comment_width_ratio": "Proportions reprises de derat_externe.json (même gabarit imprimé SMHIT), ajustées pour 4 colonnes 'Etat de plaque à colle' au lieu de 5 'Etat de l'appât' (pas de colonne 'Consommé' sur une plaque à colle) — le code normalise automatiquement la somme à 1, un léger écart n'est pas bloquant.",
   "columns": [
-    { "key": "posteNo", "label": "N° Poste", "type": "number" },
-    { "key": "etatPlaque.intact", "label": "Intact", "type": "checkbox" },
-    { "key": "etatPlaque.plaqueAlteree", "label": "Plaque altérée", "type": "checkbox" },
-    { "key": "etatPlaque.presenceCadavres", "label": "Présence cadavres", "type": "checkbox" },
-    { "key": "etatPlaque.disparu", "label": "Disparu", "type": "checkbox" },
-    { "key": "action.remplace", "label": "Remplacé", "type": "checkbox" },
-    { "key": "produit.refCode_raw", "label": "Réf. produit", "type": "text" },
-    { "key": "produit.numLot", "label": "N° Lot", "type": "text" },
-    { "key": "etatPorteAppat.inaccessible", "label": "Inaccessible", "type": "checkbox" },
-    { "key": "etatPorteAppat.disparu", "label": "Disparu", "type": "checkbox" },
-    { "key": "etatPorteAppat.malFixe", "label": "Mal fixé", "type": "checkbox" },
-    { "key": "etatPorteAppat.casse", "label": "Cassé", "type": "checkbox" }
+    { "key": "posteNo", "label": "N° Poste", "type": "number", "width_ratio": 0.041 },
+    { "key": "etatPlaque.intact", "label": "Intact", "type": "checkbox", "width_ratio": 0.045 },
+    { "key": "etatPlaque.plaqueAlteree", "label": "Plaque altérée", "type": "checkbox", "width_ratio": 0.054 },
+    { "key": "etatPlaque.presenceCadavres", "label": "Présence cadavres", "type": "checkbox", "width_ratio": 0.054 },
+    { "key": "etatPlaque.disparu", "label": "Disparu", "type": "checkbox", "width_ratio": 0.054 },
+    { "key": "action.remplace", "label": "Remplacé", "type": "checkbox", "width_ratio": 0.045 },
+    { "key": "produit.name", "label": "Nom Commercial", "type": "text", "width_ratio": 0.089 },
+    { "key": "produit.refCode_raw", "label": "Code Produit", "type": "text", "width_ratio": 0.081 },
+    { "key": "produit.numLot", "label": "N° Lot", "type": "text", "width_ratio": 0.045 },
+    { "key": "etatPorteAppat.inaccessible", "label": "Inaccessible", "type": "checkbox", "width_ratio": 0.054 },
+    { "key": "etatPorteAppat.disparu", "label": "Disparu", "type": "checkbox", "width_ratio": 0.045 },
+    { "key": "etatPorteAppat.malFixe", "label": "Mal fixé", "type": "checkbox", "width_ratio": 0.054 },
+    { "key": "etatPorteAppat.casse", "label": "Cassé", "type": "checkbox", "width_ratio": 0.073 }
   ],
   "checkbox_pixel_density_threshold": 0.35
 }
