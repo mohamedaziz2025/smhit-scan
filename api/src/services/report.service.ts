@@ -3,6 +3,7 @@ import { Report, type IReport } from "../models/Report";
 import { Product } from "../models/Product";
 import { User } from "../models/User";
 import { PeriodType, ReportStatus, FicheStatus } from "../types/enums";
+import { computePeriodBounds } from "../utils/date";
 import {
   computeInterventionFromFiche,
   computeRiskLevel,
@@ -60,14 +61,20 @@ export async function generateOrUpdateReportForFiche(fiche: IFiche): Promise<IRe
   return report;
 }
 
-/** POST /reports/generate (§9) — (re)génère explicitement le rapport d'un mois donné. */
-export async function generateReportForPeriod(
+/**
+ * POST /reports/generate (§9) — (re)génère explicitement le rapport d'un
+ * client+site pour n'importe quel type de période (jour/semaine/quinzaine/
+ * mois/trimestre/semestre/année), pas seulement le mois calendaire —
+ * `anchorDate` est n'importe quel jour à l'intérieur de la période visée,
+ * computePeriodBounds() calcule les bornes exactes (utils/date.ts).
+ */
+export async function generateReportForRange(
   clientId: string,
   siteId: string,
-  month: number,
-  year: number,
+  periodType: PeriodType,
+  anchorDate: Date,
 ): Promise<IReport> {
-  const { from, to, label } = monthBounds(new Date(Date.UTC(year, month - 1, 1)));
+  const { from, to, label } = computePeriodBounds(periodType, anchorDate);
 
   const fiches = await Fiche.find({
     clientId,
@@ -81,7 +88,7 @@ export async function generateReportForPeriod(
     report = await Report.create({
       clientId,
       siteId,
-      period: { type: PeriodType.MONTH, from, to, label },
+      period: { type: periodType, from, to, label },
       ficheIds: fiches.map((f) => f._id),
       status: ReportStatus.PENDING_ADMIN,
       createdByAgentAuto: true,

@@ -92,6 +92,7 @@ export const updateFicheSchema = z.object({
 
 export const listFichesQuerySchema = z.object({
   clientId: z.string().optional(),
+  siteId: z.string().optional(),
   from: z.coerce.date().optional(),
   to: z.coerce.date().optional(),
   status: z.string().optional(),

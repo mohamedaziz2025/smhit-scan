@@ -7,8 +7,9 @@ import { ApiError } from "../middlewares/errorHandler";
 import { canAccessClient } from "../utils/scope";
 import { auditFromRequest } from "../utils/audit";
 import { generateAndStoreReportPdf, streamReportPdf } from "../services/reportPdf.service";
-import { generateReportForPeriod, recomputeReport } from "../services/report.service";
+import { generateReportForRange, recomputeReport } from "../services/report.service";
 import { generateMagasinsReport, recomputeMagasinsReport } from "../services/reportMagasins.service";
+import { generateSiteExcel } from "../services/siteExport.service";
 import {
   generateMagasinsReportSchema,
   generateReportSchema,
@@ -33,6 +34,7 @@ reportsRouter.get(
     const query = listReportsQuerySchema.parse(req.query);
     const filter: Record<string, unknown> = {};
     if (query.clientId) filter.clientId = query.clientId;
+    if (query.siteId) filter.siteId = query.siteId;
     if (query.status) filter.status = query.status;
     if (query.period) filter["period.type"] = query.period;
     if (query.from || query.to) {
@@ -66,9 +68,31 @@ reportsRouter.post(
     const input = generateReportSchema.parse(req.body);
     if (!(await canAccessClient(req.auth!, input.clientId))) throw new ApiError(403, "Hors de votre périmètre");
 
-    const report = await generateReportForPeriod(input.clientId, input.siteId, input.month, input.year);
+    const report = await generateReportForRange(input.clientId, input.siteId, input.periodType, input.date);
     await auditFromRequest(req, "REPORT_GENERATED", "Report", report.id, input);
     res.json(report);
+  }),
+);
+
+/**
+ * Export Excel d'un site (§9/§11) — plan de zones, fiches, rapports dans 3
+ * feuilles d'un même classeur. GET (pas POST) : déclenché par un lien de
+ * téléchargement direct depuis le navigateur, pas par un appel JS/fetch.
+ */
+reportsRouter.get(
+  "/site-export",
+  asyncHandler(async (req, res) => {
+    const clientId = String(req.query.clientId ?? "");
+    const siteId = String(req.query.siteId ?? "");
+    if (!clientId || !siteId) throw new ApiError(400, "Paramètres ?clientId= et ?siteId= requis");
+    if (!(await canAccessClient(req.auth!, clientId))) throw new ApiError(403, "Hors de votre périmètre");
+
+    const buffer = await generateSiteExcel(clientId, siteId);
+    await auditFromRequest(req, "SITE_EXCEL_EXPORTED", "Site", siteId, { clientId });
+
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", `attachment; filename="export-site-${siteId}.xlsx"`);
+    res.send(buffer);
   }),
 );
 

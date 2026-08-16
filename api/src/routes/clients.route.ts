@@ -123,7 +123,9 @@ clientsRouter.post(
 
 clientsRouter.patch(
   "/:clientId/sites/:siteId",
-  requireRole(UserRole.SUPER_ADMIN),
+  // Ouvert à ADMIN aussi (pas seulement SUPER_ADMIN) — l'admin doit pouvoir
+  // corriger le plan de zones d'un site qu'il gère, pas seulement le créer.
+  requireRole(UserRole.ADMIN, UserRole.SUPER_ADMIN),
   asyncHandler(async (req, res) => {
     const input = updateSiteSchema.parse(req.body);
     const site = await Site.findOneAndUpdate(

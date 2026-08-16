@@ -58,6 +58,7 @@ export enum PeriodType {
   FORTNIGHT = "FORTNIGHT",
   MONTH = "MONTH",
   QUARTER = "QUARTER",
+  SEMESTER = "SEMESTER",
   YEAR = "YEAR",
 }
 

@@ -48,7 +48,7 @@ export interface LigneDesinsectDto {
 }
 
 export function useFiches(
-  params: { clientId?: string; status?: string; page?: number; from?: string; to?: string } = {},
+  params: { clientId?: string; siteId?: string; status?: string; page?: number; from?: string; to?: string } = {},
 ) {
   return useQuery({
     queryKey: ["fiches", params],

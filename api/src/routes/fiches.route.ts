@@ -59,6 +59,7 @@ fichesRouter.get(
     }
 
     if (query.clientId) filter.clientId = query.clientId;
+    if (query.siteId) filter.siteId = query.siteId;
     if (query.status) filter.status = query.status;
     if (query.from || query.to) {
       filter.interventionDate = {

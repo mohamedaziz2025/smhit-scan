@@ -58,7 +58,9 @@ export interface ReportDto {
   };
 }
 
-export function useReports(params: { clientId?: string; status?: string; from?: string; to?: string } = {}) {
+export function useReports(
+  params: { clientId?: string; siteId?: string; status?: string; from?: string; to?: string } = {},
+) {
   return useQuery({
     queryKey: ["reports", params],
     queryFn: async () => {
@@ -76,6 +78,29 @@ export function useReport(id: string | undefined) {
       return data as ReportDto;
     },
     enabled: !!id,
+  });
+}
+
+export type ReportPeriodType = "DAY" | "WEEK" | "FORTNIGHT" | "MONTH" | "QUARTER" | "SEMESTER" | "YEAR";
+
+/**
+ * Génération à la demande d'un rapport standard pour un site (§8/§9) —
+ * n'importe quel type de période (jour/semaine/quinzaine/mois/trimestre/
+ * semestre/année), pas seulement le mois calendaire. `date` : n'importe
+ * quel jour à l'intérieur de la période visée, le serveur calcule les
+ * bornes exactes (computePeriodBounds, api/src/utils/date.ts).
+ */
+export function useGenerateReport() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { clientId: string; siteId: string; periodType: ReportPeriodType; date: string }) => {
+      const { data } = await api.post("/reports/generate", input);
+      return data as ReportDto;
+    },
+    onSuccess: (data) => {
+      qc.setQueryData(["report", data._id], data);
+      qc.invalidateQueries({ queryKey: ["reports"] });
+    },
   });
 }
 
